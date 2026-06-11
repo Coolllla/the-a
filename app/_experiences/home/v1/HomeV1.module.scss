@@ -1,0 +1,17 @@
+// 首页 v1 ——「手绘记事本/日记本」风格
+// 在这里写 v1 专属样式。token 用 var(--paper) / var(--text-ink) 等全局变量。
+
+.home {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+.homeview {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}

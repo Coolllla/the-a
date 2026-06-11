@@ -1,14 +1,3 @@
-import styles from "./page.module.scss";
-
-export default function Home() {
-  return (
-    <main className={styles.placeholder}>
-      <h1 className={styles.title}>the-a</h1>
-      <p className={styles.hint}>
-        样式工具链已切换为 SCSS + CSS Modules。
-        <br />
-        从 <code>app/_experiences/home/v1/</code> 开始构建首页 v1。
-      </p>
-    </main>
-  );
-}
+// 入口薄壳：首页实现完全在 _experiences/home/ 下。
+// 切换版本只需修改 _experiences/home/current.ts 的导出指向。
+export { default } from "./_experiences/home/current";

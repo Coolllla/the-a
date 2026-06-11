@@ -14,3 +14,4 @@
 
 - [`decisions/tech-stack.md`](./decisions/tech-stack.md) —— 技术栈选型与原因
 - [`decisions/architecture.md`](./decisions/architecture.md) —— 站点架构与"版本化体验层"模式
+- [`decisions/asset-organization.md`](./decisions/asset-organization.md) —— 静态资产存放位置、目录结构、命名约定
