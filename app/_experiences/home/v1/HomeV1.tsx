@@ -5,6 +5,7 @@ import CharacterImg from "./CharacterImg";
 import styles from "./HomeV1.module.scss";
 import { CHARACTERS } from "./config";
 import { useParallax } from "./useParallax";
+import NameCard from "./NameCard";
 
 export default function HomeV1() {
   const charactersRef = useRef<Record<string, HTMLDivElement | null>>({});
@@ -24,6 +25,7 @@ export default function HomeV1() {
             }}
           />
         ))}
+        <NameCard />
       </div>
     </main>
   );

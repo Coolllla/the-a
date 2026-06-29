@@ -1,5 +1,5 @@
 import worl from "./assets/home-worl.png";
-import dorath from "./assets/home-dorath.png";
+import pearuth from "./assets/home-pearuth.png";
 import bearu from "./assets/home-bearu.png";
 import duke from "./assets/home-duke.png";
 import bg from "./assets/home-bg.jpg";
@@ -13,10 +13,10 @@ const CHARACTERS = [
     zindex: 3,
   },
   {
-    name: "dorath",
-    img: dorath,
+    name: "pearuth",
+    img: pearuth,
     offsetU: -0.01,
-    classname: ".dorath",
+    classname: ".pearuth",
     zindex: 4,
   },
   {
