@@ -52,27 +52,47 @@ app/
 │   ├── codex/page.tsx
 │   └── characters/page.tsx
 │
-└── _experiences/              # ⭐ 各页面的"版本实现"
-    ├── home/
-    │   ├── v1/
-    │   │   ├── HomeV1.tsx
-    │   │   ├── intro.module.scss
-    │   │   └── animations.ts
-    │   └── current.ts         # export { default } from './v1/HomeV1'
-    ├── world/
-    │   ├── v1/
-    │   └── current.ts
-    └── ... 其他可版本化页面
-
-src/
-├── data/                      # 数据层
+├── _experiences/              # ⭐ 各页面的"版本实现"
+│   ├── home/
+│   │   ├── v1/
+│   │   │   ├── HomeV1.tsx
+│   │   │   ├── HomeV1.module.scss
+│   │   │   └── ...
+│   │   └── current.ts         # export { default } from './v1/HomeV1'
+│   ├── world/
+│   │   ├── v1/
+│   │   └── current.ts
+│   └── ... 其他可版本化页面
+│
+├── _assets/                   # 跨版本共享的内容资产（详见 asset-organization.md）
 │   ├── characters/
-│   ├── factions/
-│   └── chapters/
-├── components/                # 共享 UI 组件（不属于任何一版）
-├── lib/                       # 工具、MDX 处理、类型守卫
-└── types/                     # 共享类型定义
+│   ├── world/
+│   └── ...
+│
+├── _lib/                      # 跨组件复用的工具与 hook（无 UI）
+│   ├── hitTest.ts             # 透明像素级 hit test
+│   ├── useAlphaMap.ts         # 图片 alpha 通道位图构建
+│   └── ...
+│
+├── _components/               # 跨页面复用的展示组件（有 UI，纯展示）
+│   └── ... （目前未启用）
+│
+└── _types/                    # 共享类型定义（世界观类型系统等，目前未启用）
 ```
+
+### 关于 `app/_xxx/` 前缀约定
+
+Next.js App Router 中 `app/` 下以 `_` 开头的目录**不参与路由**（保留命名），是官方推荐的"组织性目录"约定。本项目全部按此约定组织跨页面/跨版本共享的内容：
+
+| 目录 | 内容 |
+|---|---|
+| `_experiences/` | 各页面的版本实现（会随版本更新） |
+| `_assets/` | 跨版本共享的内容资产 |
+| `_lib/` | 无 UI 的工具函数与 hook |
+| `_components/` | 有 UI 的共享展示组件（预留） |
+| `_types/` | 共享 TypeScript 类型（预留） |
+
+**数据层**（角色档案、势力关系、章节正文等结构化世界观数据）后续按需在 `_data/` 或 `_types/` 下建立。
 
 ### 路由分组 `(reading)` 与 `(experience)`
 
@@ -153,4 +173,5 @@ export { default } from './v1/HomeV1'
 
 ## 八、决策变更日志
 
+- **2026-07-02**：明确 `app/_xxx/` 前缀约定作为共享目录的统一命名规则；`_lib/`（工具与 hook）替换初版目录图中假设的 `src/lib/`；补充 `_assets/` / `_components/` / `_types/` 的位置定义，与 [`asset-organization.md`](./asset-organization.md) 对齐。此前 hitTest.ts / useAlphaMap.ts 被放在项目根 `util/`，现已迁至 `app/_lib/`。
 - **2026-06-09**：初版定稿。确定剧院三层模型（外壳 / 体验 / 数据），路由分组 `(reading)` 与 `(experience)`，`_experiences/` + `current.ts` 版本化模式，首页 v1 采用定屏入口式。

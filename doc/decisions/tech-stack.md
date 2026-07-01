@@ -22,12 +22,12 @@
 |---|---|---|
 | 框架 | Next.js 16 + React 19 | ✅ 已落地 |
 | 语言 | TypeScript（strict 模式） | ✅ 已落地 |
-| 样式 | SCSS + CSS Modules | ⏳ 需清理 Tailwind |
-| 设计 token | Sass 变量 + CSS 自定义属性双轨 | ⏳ 待搭建 |
+| 样式 | SCSS + CSS Modules | ✅ 已落地（Tailwind 已卸载、`globals.scss` 就位） |
+| 设计 token | Sass 变量 + CSS 自定义属性双轨 | ⏳ 待搭建（`globals.scss` 已有初版色板 token） |
 | UI 组件策略 | 自建组件库 + Radix UI 提供 a11y 原语 | ⏳ 渐进搭建 |
 | 内容载体 | MDX | ⏳ 待集成 |
-| 场景级动画 | GSAP + ScrollTrigger | ⏳ 按需引入 |
-| UI 级动画 | Motion（原 Framer Motion） | ⏳ 按需引入 |
+| 场景级动画 | GSAP + ScrollTrigger | ✅ 已落地（首页 v1 `useParallax` 使用 `@gsap/react`） |
+| UI 级动画 | Motion（原 Framer Motion） | ✅ 已落地 |
 | 简单微动效 | 原生 CSS / Tailwind animate | ⏳ |
 | 3D | **暂不引入** Three.js / R3F | ❌ 不引入 |
 | Monorepo | 现阶段单 app；写好 props-driven 组件留好将来分包的余地 | ❌ 暂不分包 |
@@ -236,14 +236,15 @@
 
 | 项目 | 状态 |
 |---|---|
-| 卸载 Tailwind 相关包，引入 sass | ⏳ |
-| `app/styles/` 目录骨架（tokens / mixins / globals） | ⏳ |
-| 设计 token 第一版（颜色 / 字号 / 间距 / 动效曲线 / 断点） | ⏳ |
-| `tsconfig` 开启 strict 模式（已默认开启，需校验） | ⏳ |
-| `lib/types/` 初始化世界观类型定义 | ⏳ |
+| 卸载 Tailwind 相关包，引入 sass | ✅ 完成（2026-06-09）|
+| `app/styles/` 目录骨架（tokens / mixins / globals） | ⏳ 目前只有 `app/globals.scss`，尚未拆分 tokens/mixins/globals 三层 |
+| 设计 token 第一版（颜色 / 字号 / 间距 / 动效曲线 / 断点） | ⏳ 已在 `globals.scss` 落定"手绘日记本"色板 v1，其他维度待补 |
+| `tsconfig` 开启 strict 模式（已默认开启，需校验） | ✅ 已校验（`"strict": true`）|
+| 世界观类型集中定义目录 | ⏳ 待建（位置已定为 `app/_types/`，尚未启用） |
 | `@next/mdx` 集成 + 一篇示例 MDX 章节 | ⏳ |
 | Radix UI 按需引入（首批：Dialog / Tooltip） | ⏳ |
-| GSAP / Motion 按需引入 | ⏳ |
+| GSAP 按需引入 | ✅ 完成（首页 v1 `useParallax` 使用 `@gsap/react`） |
+| Motion 按需引入 | ✅ 完成（首页 v1 `AnimatePresence` + `useMotionValue`/`useSpring`） |
 | 更新日志（Changelog）MDX 实现 | ⏳ 优先 |
 
 ---
@@ -252,4 +253,5 @@
 
 记录技术选型的重大调整。格式：`YYYY-MM-DD：变更内容（原因）`。
 
+- **2026-07-02**：`gsap` + `@gsap/react` 落地首页 v1（`useParallax` 用 `gsap.quickTo` 做鼠标视差）；同期 Motion 落地首个实际用例——`AnimatePresence` 处理 `NameCard` 悬停显隐的进出场动画，`useMotionValue` + `useSpring` 驱动名字卡跟随鼠标位移。验证了"场景级 GSAP / UI 级 Motion"的分工判断。共享工具位置确定为 `app/_lib/`（`hitTest.ts` / `useAlphaMap.ts`），架构层面的 `app/_xxx/` 前缀约定同步落到 [`architecture.md`](./architecture.md)。
 - **2026-06-09**：初版定稿。确定 SCSS + CSS Modules / Radix UI / GSAP + Motion / 暂不 3D / 暂不 monorepo / VPS + Docker 部署的整体路线。
