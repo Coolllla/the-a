@@ -1,0 +1,91 @@
+// ============================================================
+// Nav 结构性骨架
+// ------------------------------------------------------------
+// 这里只写"顶部居中横条"必需的定位与排布，视觉全部留 TODO。
+// 姿态钩子在文件末尾，通过 [data-*] 属性选择器切换。
+// ============================================================
+
+.nav {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  // TODO 视觉：顶部外距（top 值 or margin-top）—— 决定 nav 距页面顶部多远
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  // TODO 视觉：内边距、间距、背景、圆角、边框、阴影、模糊等
+  // 例：padding: 12px 24px; gap: 32px; background: ...; border-radius: 999px;
+}
+
+.logoSlot {
+  flex-shrink: 0;
+  // TODO 视觉：logo 尺寸 + 占位样式（等 logo 设计好后此处放 <Image /> 或 svg）
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  // TODO 视觉：项之间的间距
+  // 例：gap: 20px;
+}
+
+.item {
+  // 结构层无需样式，视觉需要时再补
+}
+
+.link {
+  text-decoration: none;
+  color: inherit;
+  display: inline-block;
+  // TODO 视觉：字体、字号、字重、颜色、hover 过渡等
+  // 建议给 transition 让 active/hover 切换有平滑
+}
+
+.active {
+  // TODO 视觉：active 态 —— 颜色变化 + 下划线
+  // 下划线常见做法：伪元素 ::after，或 border-bottom，或 box-shadow inset
+}
+
+// ============================================================
+// 姿态钩子（不要在这里堆视觉，视觉写在上面的类里，这里只做 mode 覆写）
+// ============================================================
+
+// --- background ---
+.nav[data-background="transparent"] .inner {
+  background: transparent;
+}
+.nav[data-background="translucent"] .inner {
+  // TODO 视觉：半透明背景 + backdrop-filter: blur(...)
+}
+// data-background="opaque" 走 .inner 默认视觉，无需在这里覆盖
+
+// --- scroll ---
+.nav[data-scroll="pinned"] {
+  position: fixed;
+}
+.nav[data-scroll="float"] {
+  position: absolute; // 只贴在页面顶部，滚动会离开视口
+}
+.nav[data-scroll="hide-on-scroll"] {
+  position: fixed;
+  // TODO 需要 JS 监听滚动方向来切一个 .is-hidden 类；
+  //      骨架阶段先按 pinned 表现。JS 实现方式：
+  //      在 NavItem 之外加一个 ScrollHider client 组件包 <nav>，
+  //      或者把 Nav 整体升到 client 加 useEffect 监听 window.scrollY。
+}
+
+// --- theme ---
+.nav[data-theme="light"] {
+  // TODO 视觉：浅色主题变量（背景/字色/下划线色）
+  // 建议用 CSS 自定义属性（--nav-fg、--nav-bg、--nav-accent）在这里赋值，
+  // .inner / .link / .active 里用 var(...) 引用，切换主题只改这里
+}
+.nav[data-theme="dark"] {
+  // TODO 视觉：深色主题变量
+}
