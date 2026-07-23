@@ -7,7 +7,7 @@ import styles from "./Nav.module.scss";
 
 // 单个 nav 项。active 状态需要 usePathname（client-only），所以只有这一层 'use client'，
 // 父级 Nav.tsx 保持 Server Component。
-export default function NavItem({ item }: { item: NavItemConfig }) {
+export default function NavItem({ item,distance }: { item: NavItemConfig,distance:number }) {
   const pathname = usePathname();
 
   // 精确匹配 or 子路径匹配。Home 的 "/" 必须精确匹配，否则任意路径都会命中。
@@ -17,7 +17,7 @@ export default function NavItem({ item }: { item: NavItemConfig }) {
       : pathname === item.href || pathname.startsWith(item.href + "/");
 
   return (
-    <li className={styles.item}>
+    <li className={styles.item} style={{"--i":distance} as React.CSSProperties}>
       <Link
         href={item.href}
         className={`${styles.link} ${isActive ? styles.active : ""}`}

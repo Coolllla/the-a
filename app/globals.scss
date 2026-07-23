@@ -27,6 +27,22 @@
   /* --- 强调色()--- */
   --accent-red: #b91c1c;
   --highlight-yellow: #fde68a;
+  --highlight-yellow-darker: #fbd231;
+
+}
+
+// --- 显式主题作用域 ---
+// 任何元素挂 data-theme="light|dark" 就能把该子树的主题变量覆盖为对应值。
+// 站点默认在 <body data-theme="light"> 上开一份（见 app/layout.tsx），
+// 未来某个体验层想切深色只需局部 <div data-theme="dark">。
+// 组件的 SCSS 里只用 var(--xxx) 引用，不要在组件里再定义主题变量。
+[data-theme="light"] {
+  --active-color: var(--highlight-yellow-darker);
+  // TODO 后续追加：--nav-fg / --nav-bg / --card-bg / --btn-primary-bg 等
+}
+
+[data-theme="dark"] {
+  // TODO 深色主题变量
 }
 
 @media (prefers-color-scheme: dark) {

@@ -76,3 +76,78 @@
 
 ### 潜在的迁移
 - `NavMode` 类型稳定后可以从这份日志迁移到 `decisions/nav-shell.md`（作为外壳层的第一份决策文档）
+- 下面"主题变量作用域"这段稳定后建议迁到 `decisions/theming.md`
+
+---
+
+## 追加：主题变量作用域架构（同日）
+
+### 起因
+
+testview 预览页里，强制加了 `.active` 的链接颜色没生效。诊断发现：`--active-color` 原本声明在 `Nav.module.scss` 的 `.nav[data-theme="light"]` 内，属于**组件级作用域**。testview 的预览块复用了 `.inner` / `.link` / `.active` 等类，但 DOM 里没有 `.nav[data-theme="light"]` 祖先，CSS 变量继承链断了，`var(--active-color)` 拿不到值。
+
+### 决策
+
+**主题变量声明统一提到全局 `[data-theme="light|dark"]`，放在 `globals.scss`**。组件的 SCSS 只用 `var(--xxx)` 引用，不再自己声明主题变量。任何元素通过 `data-theme="..."` 属性即可打开一个主题作用域，站点默认在 `<body data-theme="light">` 上开一份。
+
+Why：CSS 自定义属性天然按 DOM 继承，把主题声明和组件视觉解耦后：
+- 组件复用不需要携带完整的 nav 语义（预览页 / Storybook 类场景直接可用）
+- 未来某个体验层想局部切深色，只要一个 `<div data-theme="dark">` 包起来
+- 主题维护点收敛到一处
+
+### 落地文件
+
+- `globals.scss`：新增全局 `[data-theme="light"]`（承载 `--active-color` 等）与 `[data-theme="dark"]` 占位
+- `Nav.module.scss`：删除 `.nav[data-theme="light|dark"]` 内部的变量声明，仅保留一段注释说明新架构；`data-theme` 属性照传，不影响继承
+- `app/layout.tsx`：`<body data-theme="light">`，全站默认光态
+
+### 与 @media (prefers-color-scheme: dark) 的关系
+
+`globals.scss` 里现在同时存在 `@media (prefers-color-scheme: dark)` 与 `[data-theme="dark"]` 两套机制：前者跟随 OS 设置，后者是显式手动切。当前它们各管各的，未来若要统一（如"OS 深色时 body 自动切 data-theme"），再决定。
+
+### 已知未做
+
+- `[data-theme="dark"]` 块内目前是空 TODO，等真正需要暗色语境时再填
+- 未来其他组件（卡片、按钮、词条）的主题变量都应加到全局 `[data-theme]` 块，不要下沉到组件 module
+
+---
+
+## 遗留问题（同日，用户跨设备继续）
+
+### 现象
+
+用户报告：在 `/testview` 上，hover nav 之后，分隔符 `|`（`.item::after` 生成的字符）**视觉上沉到了字的底下**。
+
+### 相关代码（截止用户离开时的状态）
+
+- `app/_shell/Nav/Nav.module.scss` —— 分隔符定义在 `.item:not(:last-child)::after`，hover 时通过 `.list:hover .item::after { padding: 0 1em }` 展开
+- `.active` 应用了 `transform: scale(1.2)`（active 项放大 20%）
+- `.link:hover` 只做 `filter: drop-shadow`，不改布局
+- `.list` 上有 `opacity: .3 → .7` 的 hover 过渡
+
+### 已经排除的方向（不要重复）
+
+以下是这次会话里我（前一个 agent）猜过的、**用户明确说"不对"** 的方向：
+
+- **假设 A：`.active` 的 `scale(1.2)` 从中心放大导致 `|` 视觉上位于放大后字体的下半部分**。我建议的三种修法（`transform-origin: bottom` / 改用 `font-size` / 加 `translateY` 校正）用户没采纳，且明确表示这个诊断方向不对。**下一个 agent 请从别的方向切入**，不要再重复"scale 视觉错觉"这条思路。
+
+### 值得排查的其他方向（我没深挖，供下一位参考）
+
+1. **`transition: padding  ease-in-out` 的简写有问题**（两个空格是笔误，但更重要是缺 `<time>` 值）。按 CSS Transition 规范，简写里没时长可能使整条 `transition` 声明失效 → `transition-property` 回退为 `all`。然后独立的 `transition-duration: calc(var(--i)*300ms)` 生效，property 变成 `all`。这意味着 `.item::after` 上**任何**发生变化的属性都会动画。虽然静态看只有 padding 在变，但要不要动手验一下 computed style 里 `transition-property` 到底是什么值。
+2. **line-box / baseline** 因素：`.item::after` 是 inline，`<a>` 是 `display: inline-block`。inline-block 的 baseline 计算规则和纯 inline 不一样。如果 hover 触发了什么令 `<a>` 的 baseline 位置改变（哪怕微小），`|` 相对位置就会跳。可以在 devtools 里用 3D 视图 + hover 状态锁定看看。
+3. **flex 交叉轴**：`.list` 是 flex，`align-items` 默认 `stretch`，`.item` 的高度是被拉伸的。`<a>` 和 `|` 在 `<li>` 内部按 inline 流布局，vertical-align 默认 baseline。如果 hover 让 `<a>` 的高度产生了微小变化（比如 filter 的合成层引入的舍入），会不会让 li 内容的对齐位置变？
+4. **filter 的合成层影响**：`.link:hover` 的 `filter: drop-shadow` 会给 `<a>` 建独立合成层，浏览器可能有 subpixel snapping 差异，边缘元素（如 `|`）在两种状态下渲染 y 值差 1px 也不是没见过。用 devtools 的 Layers 面板可以看。
+5. **需要一手证据**：视频 / 截图（hover 前 vs hover 后）能直接告诉下一位到底 `|` 挪了多少像素、往哪挪，比继续瞎猜有用得多。
+
+### 交接建议
+
+- 让用户录一段 hover 前后的对比小视频（或前后两张截图），比语言描述精准得多
+- devtools 打开 `/testview`，锁 hover 状态（Force element state → `:hover`），对比 hover 与非 hover 下 `.item::after` 的 computed style 全量，尤其是 `padding`、`transform`、`transform-origin`、`vertical-align`、`line-height`、`font-size`、`filter` 等
+- 修 `transition: padding  ease-in-out;` 这条简写（把 duration 加回去或删除简写，只留独立声明），再看现象是否变化 —— 这算是"顺手清理，附带排查"
+
+### 当前分隔符的架构（下一位读代码前先知道）
+
+- `.item::after`（`<li>` 的伪元素）承担 `|` 字符 + 左右 padding
+- `.list` hover 触发 padding 展开 + 整条 opacity 提升
+- 每个 `<li>` 通过 `style={{ "--i": distance }}` 拿到"距中心距离"（0.5 / 1.5 / 2.5，`Nav.tsx` 里 `center = (total-2)/2 = 1.5`，用户确认这是有意的：因为动画的是**分隔符**而不是 item，中心在两个 item 之间）
+- `transition-duration: calc(var(--i)*300ms)` 目的是从中心向两边**错峰速度**（中心快、边缘慢），用户确认这是有意的、不是 bug

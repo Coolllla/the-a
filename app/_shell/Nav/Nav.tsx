@@ -20,6 +20,9 @@ export default function Nav({
 }: NavMode = {}) {
   if (!visible) return null;
 
+  const total = NAV_ITEMS.length;
+  const center = (total-2)/2;
+
   return (
     <nav
       className={styles.nav}
@@ -33,9 +36,11 @@ export default function Nav({
           {/* TODO logo 占位：等设计好再填 */}
         </div>
         <ul className={styles.list}>
-          {NAV_ITEMS.map((item) => (
-            <NavItem key={item.href} item={item} />
-          ))}
+          {NAV_ITEMS.map((item,index) => {
+            const distance = Math.abs(center-index);
+           return <NavItem key={item.href} item={item} distance={distance}/>
+          }
+          )}
         </ul>
       </div>
     </nav>
