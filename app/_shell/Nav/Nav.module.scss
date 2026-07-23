@@ -51,7 +51,10 @@
 }
 
 .item {
-  // 结构层无需样式，视觉需要时再补
+  // 阻断 <li> 内部的软换行机会：text 与 ::after 的 "|" 绑在一起，
+  // 视口窄导致 flex 压缩时不会把分隔符甩到下一行。
+  white-space: nowrap;
+
   &:not(:last-child){
     &::after{
       content: "|";

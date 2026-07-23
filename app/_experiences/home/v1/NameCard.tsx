@@ -16,7 +16,7 @@ function NameCard({ name }: { name: string }) {
 
   const src = dic.get(name);
   if (!src) return null;
-  return <Image src={src} alt="worl" className={styles.pic} />;
+  return <Image src={src} alt="worl" className={styles.pic} unoptimized />;
 }
 
 export default NameCard;
