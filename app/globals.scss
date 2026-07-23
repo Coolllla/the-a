@@ -28,7 +28,6 @@
   --accent-red: #b91c1c;
   --highlight-yellow: #fde68a;
   --highlight-yellow-darker: #fbd231;
-
 }
 
 // --- 显式主题作用域 ---
@@ -76,7 +75,7 @@ body {
   flex-direction: column;
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-geist-mono) system-ui, -apple-system, sans-serif;
   font-size: 1.6rem;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;

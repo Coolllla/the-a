@@ -17,9 +17,14 @@
 .inner {
   display: flex;
   align-items: center;
-  padding: 1.2rem .6rem;
-  backdrop-filter: blur(20px);
+  padding: 1.2rem 2rem;
+  backdrop-filter: blur(0px);
   border-radius: 5px;
+
+  &:hover {
+    backdrop-filter: blur(5px);
+    transition: backdrop-filter 0.2s ease-in-out;
+  }
   // TODO 视觉：内边距、间距、背景、圆角、边框、阴影、模糊等
   // 例：padding: 12px 24px; gap: 32px; background: ...; border-radius: 999px;
 }
@@ -34,15 +39,15 @@
   padding: 0;
   margin: 0;
   display: flex;
-  gap:0;
+  gap: 0;
   opacity: 0.3;
 
-  transition: all .2s ease-in-out;
+  transition: all 0.2s ease-in-out;
 
-  &:hover{
-    opacity: .7;
+  &:hover {
+    opacity: 0.7;
 
-    .item::after{
+    .item::after {
       padding: 0 1em;
     }
   }
@@ -55,15 +60,15 @@
   // 视口窄导致 flex 压缩时不会把分隔符甩到下一行。
   white-space: nowrap;
 
-  &:not(:last-child){
-    &::after{
+  &:not(:last-child) {
+    &::after {
       content: "|";
-      padding: 0 .5em;
+      padding: 0 0.5em;
       pointer-events: none;
-      opacity: .3;
+      opacity: 0.3;
       color: var(--text-pencil);
-      transition: padding  ease-in-out;
-      transition-duration: calc(var(--i)*300ms);
+      transition: padding ease-in-out;
+      transition-duration: calc(var(--i) * 300ms);
     }
   }
 }
@@ -74,14 +79,14 @@
   color: inherit;
   display: inline-block;
   filter: drop-shadow(0 0 0 transparent);
-  transition: filter .2s ease-in-out;
+  transition: filter 0.2s ease-in-out;
 
-  &:hover{
+  &:hover {
     filter: drop-shadow(0 0 8px var(--bg-card));
   }
 
-  &.active:hover{
-    filter: drop-shadow(0 0 .2em var(--highlight-yellow));
+  &.active:hover {
+    filter: drop-shadow(0 0 0.2em var(--highlight-yellow));
   }
   // TODO 视觉：字体、字号、字重、颜色、hover 过渡等
   // 建议给 transition 让 active/hover 切换有平滑
@@ -91,9 +96,10 @@
   transform: scale(1.2);
   color: var(--active-color);
   font-weight: 700;
-  filter: drop-shadow(0 0 .2em var(--highlight-yellow));
+  font-family: var(--font-caveat);
+  filter: drop-shadow(0 0 0.2em var(--highlight-yellow));
 
-  &::after{
+  &::after {
     position: absolute;
     content: "";
     height: 1px;
