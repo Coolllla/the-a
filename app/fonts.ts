@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Caveat } from "next/font/google";
+import { Geist, Geist_Mono, Caveat, Open_Sans } from "next/font/google";
 
 export const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,5 +12,10 @@ export const geistMono = Geist_Mono({
 
 export const caveat = Caveat({
   variable: "--font-caveat",
+  subsets: ["latin"],
+});
+
+export const openSans = Open_Sans({
+  variable: "--font-open-sans",
   subsets: ["latin"],
 });

@@ -2,6 +2,7 @@ import { NAV_ITEMS } from "./config";
 import NavItem from "./NavItem";
 import type { NavMode } from "./types";
 import styles from "./Nav.module.scss";
+import { cycledA, cycledB, cycledC, cycledD } from "./nav-fonts";
 
 // 姿态默认值：不指定时按站点主区域（阅读态）预期给。
 // 各体验层通过 props 局部覆盖，例如 <Nav background="transparent" scroll="float" />。
@@ -22,10 +23,11 @@ export default function Nav({
 
   const total = NAV_ITEMS.length;
   const center = (total-2)/2;
+  const navFontVars = [cycledA,cycledB,cycledC,cycledD].map(f=>f.variable).join(" ");
 
   return (
     <nav
-      className={styles.nav}
+      className={`${styles.nav} ${navFontVars}`}
       data-background={background}
       data-scroll={scroll}
       data-theme={theme}

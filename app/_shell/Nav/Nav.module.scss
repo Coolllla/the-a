@@ -40,7 +40,7 @@
   margin: 0;
   display: flex;
   gap: 0;
-  opacity: 0.3;
+  opacity: 0.2;
 
   transition: all 0.2s ease-in-out;
 
@@ -83,6 +83,7 @@
 
   &:hover {
     filter: drop-shadow(0 0 8px var(--bg-card));
+    animation: fontCycle 1.2s steps(1) infinite;
   }
 
   &.active:hover {
@@ -146,3 +147,15 @@
 // 这一层不再声明，data-theme 属性照传，靠继承拿 var(...)。
 // 这里只放"Nav 特有、跨主题需要差异化"的规则（如 dark 下 nav 特有的背景/边框），
 // 目前尚无内容。
+
+
+
+
+// ----animation----
+    @keyframes fontCycle {
+      0% {font-family: var(--font-cycled-a);}
+      25% {font-family: var(--font-cycled-b);}
+      50% {font-family: var(--font-cycled-c);}
+      75% {font-family: var(--font-cycled-d);}
+      100% {font-family: var(--font-cycled-d);}
+    }

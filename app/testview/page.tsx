@@ -1,15 +1,12 @@
-import Nav from "../_shell/Nav/Nav";
 import { NAV_ITEMS } from "../_shell/Nav/config";
 import styles from "../_shell/Nav/Nav.module.scss";
 
-// Nav 预览页：上方是真实 <Nav />（当前路由 /testview 不匹配任何项 → 全部默认态）；
+// Nav 预览页：顶部真实 <Nav /> 由 root layout 提供（当前路由 /testview 不匹配任何项 → 全部默认态）；
 // 下方两块用同一套 SCSS 类静态渲染，分别强制 .active 和不加 .active，
 // 方便你调视觉时直接肉眼对比 —— 不依赖路由存在。
 export default function Page() {
   return (
     <main style={{ padding: "8rem 2rem 4rem", minHeight: "100vh" }}>
-      <Nav />
-
       <section style={{ marginBottom: "3rem" }}>
         <h2 style={{ margin: "0 0 0.5rem" }}>1. 强制 active 态</h2>
         <p style={{ margin: "0 0 1rem", opacity: 0.6, fontSize: "0.9rem" }}>

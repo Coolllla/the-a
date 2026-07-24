@@ -1,0 +1,263 @@
+// 字体预览页样式
+// 顶部控制条常驻可视区，下方每种字体一个 card，样本区跟随控制条实时变化。
+
+.main {
+  padding: 8rem 2rem 6rem;
+  max-width: 96rem;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.header {
+  margin-bottom: 3rem;
+
+  h1 {
+    margin: 0 0 0.6rem;
+    font-size: 3.6rem;
+    line-height: 1.2;
+  }
+
+  p {
+    margin: 0;
+    opacity: 0.65;
+    font-size: 1.4rem;
+    line-height: 1.6;
+  }
+
+  code {
+    font-family: var(--font-geist-mono), monospace;
+    font-size: 0.9em;
+    padding: 0.1em 0.4em;
+    background: var(--bg-card);
+    border-radius: 0.4rem;
+  }
+}
+
+// --- 控制条：sticky 在视口顶部（Nav 之下）---
+.controls {
+  position: sticky;
+  top: 6rem;
+  z-index: 10;
+  background: var(--bg-paper);
+  border: 1px solid var(--line-light);
+  border-radius: 0.8rem;
+  padding: 1.6rem 1.8rem;
+  margin-bottom: 3.6rem;
+  box-shadow: 0 0.4rem 1.6rem rgba(0, 0, 0, 0.04);
+  display: grid;
+  gap: 1.4rem;
+}
+
+.controlRow {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+
+  label {
+    font-size: 1.2rem;
+    opacity: 0.7;
+    min-width: 6rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
+
+.textarea {
+  flex: 1;
+  min-width: 24rem;
+  font: inherit;
+  font-size: 1.5rem;
+  line-height: 1.5;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line-light);
+  border-radius: 0.5rem;
+  background: var(--bg-card);
+  color: var(--text-ink);
+  resize: vertical;
+  min-height: 4rem;
+  max-height: 16rem;
+  font-family: var(--font-open-sans), system-ui, sans-serif;
+
+  &:focus {
+    outline: none;
+    border-color: var(--line-dark);
+  }
+}
+
+// 权重按钮组
+.weights {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.weightBtn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--line-light);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--text-pencil);
+  font-size: 1.3rem;
+  font-family: var(--font-geist-mono), monospace;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  min-width: 4.4rem;
+
+  &:hover {
+    border-color: var(--line-dark);
+    color: var(--text-ink);
+  }
+
+  &.active {
+    background: var(--active-color);
+    border-color: var(--active-color);
+    color: var(--text-ink);
+    font-weight: 600;
+  }
+}
+
+// 尺寸 slider
+.sizeControl {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 24rem;
+
+  input[type="range"] {
+    flex: 1;
+    accent-color: var(--highlight-yellow-darker);
+  }
+
+  .sizeValue {
+    font-family: var(--font-geist-mono), monospace;
+    font-size: 1.3rem;
+    color: var(--text-pencil);
+    min-width: 4.5rem;
+    text-align: right;
+  }
+}
+
+// 斜体/复位等小按钮
+.miniBtn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--line-light);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--text-pencil);
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+
+  &:hover {
+    border-color: var(--line-dark);
+    color: var(--text-ink);
+  }
+
+  &.active {
+    background: var(--text-ink);
+    border-color: var(--text-ink);
+    color: var(--bg-paper);
+  }
+}
+
+// --- 字体卡片 ---
+.fontCard {
+  margin-bottom: 4rem;
+  padding-bottom: 3rem;
+  border-bottom: 1px solid var(--line-light);
+
+  &:last-of-type {
+    border-bottom: none;
+  }
+}
+
+.cardHead {
+  display: flex;
+  align-items: baseline;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.4rem;
+
+  h2 {
+    margin: 0;
+    font-size: 2.2rem;
+    font-weight: 600;
+  }
+
+  code {
+    font-family: var(--font-geist-mono), monospace;
+    font-size: 1.2rem;
+    opacity: 0.55;
+  }
+
+  .role {
+    width: 100%;
+    margin: 0.3rem 0 0;
+    font-size: 1.3rem;
+    opacity: 0.7;
+    line-height: 1.5;
+  }
+}
+
+.sample {
+  padding: 2rem 0;
+  word-break: break-word;
+  white-space: pre-wrap;
+  // 保证 sample 至少能撑起来一行的高度，即使 text 是空的
+  min-height: 6rem;
+}
+
+// 权重阶梯参考条：小尺寸展示各权重的对比
+.ladder {
+  margin-top: 1.4rem;
+  display: flex;
+  gap: 2.2rem;
+  flex-wrap: wrap;
+  align-items: baseline;
+  padding-top: 1.4rem;
+  border-top: 1px dashed var(--line-light);
+
+  .ladderItem {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    cursor: pointer;
+
+    .ladderSample {
+      font-size: 1.8rem;
+      line-height: 1.2;
+    }
+
+    .ladderLabel {
+      font-family: var(--font-geist-mono), monospace;
+      font-size: 1rem;
+      opacity: 0.5;
+      letter-spacing: 0.04em;
+    }
+  }
+}
+
+.footer {
+  font-size: 1.3rem;
+  opacity: 0.55;
+  line-height: 1.6;
+  margin-top: 3rem;
+
+  p {
+    margin: 0 0 0.6rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  code {
+    font-family: var(--font-geist-mono), monospace;
+    font-size: 0.9em;
+    padding: 0.1em 0.4em;
+    background: var(--bg-card);
+    border-radius: 0.4rem;
+  }
+}

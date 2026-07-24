@@ -16,7 +16,6 @@ import {
   useSpring,
 } from "motion/react";
 import { relative } from "path";
-import Nav from "@/app/_shell/Nav/Nav";
 
 // hit box 调试开关：开发时改成 true 看红框对不对，验完记得关掉
 const DEBUG_HITBOX = false;
@@ -123,7 +122,6 @@ export default function HomeV1() {
 
   return (
     <main className={styles.home}>
-      <Nav />
       <div
         className={styles.homeview}
         ref={container}

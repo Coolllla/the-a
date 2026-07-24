@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { geistMono, geistSans, caveat } from "./fonts";
+import { geistMono, geistSans, caveat,openSans } from "./fonts";
+import Nav from "./_shell/Nav/Nav";
 import "./globals.scss";
 
 export const metadata: Metadata = {
@@ -7,7 +8,7 @@ export const metadata: Metadata = {
   description: "A worldbuilding site for the novel.",
 };
 
-const fonts = [geistMono, geistSans, caveat];
+const fonts = [geistMono, geistSans, caveat,openSans];
 
 const fontVariables = fonts.map((font) => font.variable).join(" ");
 
@@ -18,7 +19,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" className={fontVariables}>
-      <body data-theme="light">{children}</body>
+      <body data-theme="light">
+        <Nav />
+        {children}
+      </body>
     </html>
   );
 }
