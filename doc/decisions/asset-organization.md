@@ -101,8 +101,8 @@ public/
 ├── og.png                            # 社交分享卡
 ├── fonts/                            # 自部署字体
 ├── chapters/                         # MDX 章节内嵌插图
-│   └── ch-01-mist/
-│       └── pier.jpg                  # MDX 中：![](/chapters/ch-01-mist/pier.jpg)
+│   └── 01-mist/                      # 目录名 = 章节 slug，与 URL /chapters/01-mist 一致
+│       └── pier.jpg                  # MDX 中：![](/chapters/01-mist/pier.jpg)
 └── media/                            # 大体积素材（视频、4K 原图）
 ```
 
@@ -115,10 +115,12 @@ Next.js App Router 中 `app/` 下以 `_` 开头的文件夹是**保留命名**�
 写小说时不应每张图都写 `import` 语句。`public/chapters/<slug>/` 让 MDX 引用变成纯字符串路径，写作流畅：
 
 ```mdx
-![雾港码头](/chapters/ch-01-mist/pier.jpg)
+![雾港码头](/chapters/01-mist/pier.jpg)
 ```
 
 代价是失去 import 方式的编译期保护——但对**写作者主导**的章节内容，写作流畅性优先级更高。
+
+插图目录名**必须等于章节 slug**（形状 `<序号>-<描述词>`，全小写短横线，无额外前缀），这样插图路径与 URL `/chapters/<slug>` 天然对齐，写作时不必记两套命名。slug 由写作者手填在章节 frontmatter 里，不自动生成。
 
 ---
 
@@ -207,5 +209,6 @@ export function ThreeFrameLoop({ active = true, fps = 6 }) {
 
 ## 八、决策变更日志
 
+- **2026-07-27**：统一章节 slug 形状。此前本文档示例用 `public/chapters/ch-01-mist/`，而 [`architecture.md`](./architecture.md) 的 URL 示例是 `/chapters/01-mist`，两者不一致。裁定**以 architecture.md 的 URL 形状为准**（`<序号>-<描述词>`，不加 `ch-` 前缀），本文档示例已对齐，并明确"插图目录名 = 章节 slug"。
 - **2026-06-16**：新增"动图 / 序列帧动画"章节。明确不使用 GIF（256 色 + 1 位透明的硬伤），装饰性自动循环用 APNG / 动图 WebP，需交互控制用序列帧 + JS。
 - **2026-06-09**：初版定稿。确定 import 静态导入为默认偏好，资产按"体验层 vs 数据层"分离，v1 专属资产 co-location 于 `_experiences/home/v1/assets/`，MDX 章节图走 `public/chapters/`，全小写短横线命名。

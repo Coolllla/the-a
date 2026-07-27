@@ -1,32 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# the-a
 
-## Getting Started
+个人小说与世界观站点。承载两类内容:**可阅读的小说正文**(章节、归档)与**可探索的世界观**(设定词条、角色、地图)。
 
-本项目统一使用 **pnpm** 作为包管理器（不要用 npm / yarn / bun，也不要提交其他 lockfile）。
+技术上是一个 Next.js App Router 项目,视觉密集,把"稳重的阅读体验"和"沉浸的视觉体验"分成两个路由分区分别对待。
 
-First, run the development server:
+## 当前状态
+
+早期开发中。已完成首页 v1(视差交互)与全站导航;藏书阁 `/library` 目前只有**目录骨架与数据层**(时间轴 / 方格双视图的组件都是空壳,等美术资产就位再实现);**内容管道(MDX)尚未集成**,阅读区与体验区的页面还未实现。
+
+## 快速开始
+
+需要 Node.js 与 **pnpm**(本项目只用 pnpm,不要用 npm / yarn / bun,也不要提交其他 lockfile)。
 
 ```bash
-pnpm dev
+pnpm install
+pnpm dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+其他命令见 `package.json`。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 项目结构
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+app/
+├── layout.tsx              # 全局外壳(导航、字体、主题)
+├── page.tsx                # 首页薄壳,转发到 _experiences/home/current
+├── library/page.tsx        # 藏书阁薄壳
+├── _shell/                 # 外壳层实现(Nav)
+├── _experiences/           # 版本化体验层(见下)
+├── _data/  _types/         # 数据层:结构化世界观数据 + 其类型
+├── _lib/                   # 无 UI 的工具与 hook
+└── ⏳ _assets/ _components/ (reading)/ (experience)/   # 已规划,尚未创建
+doc/                        # 决策记录、笔记、会话日志(不参与构建)
+public/                     # 稳定 URL 资源(favicon、字体、章节插图、大体积媒体)
+```
 
-## Learn More
+### 版本化体验层
 
-To learn more about Next.js, take a look at the following resources:
+页面的视觉实现按版本并存,不覆盖式重写:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+app/_experiences/home/
+├── current.ts     # export { default } from './v1/HomeV1'
+├── v1/            # 完整的一版实现 + 专属 assets/
+└── v2/            # 将来的新版,旧版保留可回看
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+改版时新建 `v<N>/` 并切换 `current.ts` 的转发目标,历史版本代码留在仓库里随时能重温。详见 [`doc/decisions/architecture.md`](doc/decisions/architecture.md)。
 
-## Deploy on Vercel
+### 两个路由分区
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| 分区 | 路由 | 特点 |
+|---|---|---|
+| `(reading)` 阅读区 | `/chapters/<slug>`、`/archive` | 窄栏、稳重排版、零重动效,**不加载**重动画库 |
+| `(experience)` 体验区 | `/world`、`/codex`、`/characters/<slug>` | 全宽、沉浸、可用全部动画能力 |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+路由分组名不进 URL,只用于挂载不同的 `layout.tsx`。**两个分组目前都还没建**——阅读区一个页面都还没有,分组会等两种 layout 的差异真正具体时再拆;新页面先直接落在 `app/<route>/`(如 `/library`)。
+
+## 内容工作流
+
+正文载体是 **MDX**,文件随代码进 Git,早期不上 CMS(内容量 < 100 篇时 CMS 是过度设计)。
+
+但**日常码文不在本仓库进行**:写作使用一个独立仓库的桌面写作工具,其真源是编辑器自己的文档 JSON,MDX 是**单向导出的产物**。
+
+> ⚠️ 这意味着手动修改本仓库里的 `.mdx` 文件,会在下次导出时被覆盖。正文修改一律回到写作工具里做。
+
+章节元数据写在 YAML frontmatter 里;章节插图放 `public/chapters/<slug>/`,目录名与章节 slug、URL 三者一致。
+
+方案与背景见 [`doc/notes/7.27-mdx编辑器调研.md`](doc/notes/7.27-mdx编辑器调研.md)。
+
+## 文档导航
+
+`doc/` 是项目的"留痕"目录,不参与构建:
+
+| 目录 | 内容 |
+|---|---|
+| [`doc/decisions/`](doc/decisions/) | 技术与架构决策记录(ADR)。已稳定的决策只追加变更日志,不改正文 |
+| [`doc/notes/`](doc/notes/) | 踩坑记录与思考笔记,按日期或主题命名,不索引 |
+| [`doc/logs/`](doc/logs/) | AI 协作会话日志,`YYYY-MM-DD-<slug>.md`,跨会话接力用 |
+
+入口三篇:[技术栈选型](doc/decisions/tech-stack.md) · [站点架构](doc/decisions/architecture.md) · [资产组织](doc/decisions/asset-organization.md)
+
+## 给 AI 协作者
+
+本仓库的硬规则(包管理器、改代码前先确认等)见 [`AGENTS.md`](AGENTS.md)。
+
+⚠️ 本项目使用的 Next.js 版本较新,API 与约定可能与训练数据不符 —— 写代码前请先读 `node_modules/next/dist/docs/` 中的对应指南。

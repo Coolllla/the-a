@@ -41,30 +41,38 @@ the-a 不是一个静态展示站点，它有两个不寻常的需求：
 app/
 ├── layout.tsx                 # 全局外壳（导航、字体、主题 provider）
 ├── page.tsx                   # 首页入口（薄壳，转发到 _experiences/home/current）
+├── library/page.tsx           # 藏书阁入口（薄壳，转发到 _experiences/library/current）
 │
-├── (reading)/                 # 阅读区路由分组——稳定，所有版本共用
+├── (reading)/                 # 阅读区路由分组——稳定，所有版本共用   ⏳ 未建
 │   ├── chapters/[slug]/page.tsx
 │   ├── archive/page.tsx
 │   └── layout.tsx             # 窄栏布局、克制动效、不加载重动画库
 │
-├── (experience)/              # 体验区路由分组——会随版本更新
+├── (experience)/              # 体验区路由分组——会随版本更新   ⏳ 未建
 │   ├── world/page.tsx
 │   ├── codex/page.tsx
 │   └── characters/page.tsx
+│
+├── _shell/                    # 外壳层的实现（跨全站、不随版本变）
+│   └── Nav/                   # 全站导航（挂在根 layout.tsx）
 │
 ├── _experiences/              # ⭐ 各页面的"版本实现"
 │   ├── home/
 │   │   ├── v1/
 │   │   │   ├── HomeV1.tsx
 │   │   │   ├── HomeV1.module.scss
+│   │   │   ├── assets/        # 本版专属资产
 │   │   │   └── ...
 │   │   └── current.ts         # export { default } from './v1/HomeV1'
-│   ├── world/
-│   │   ├── v1/
+│   ├── library/
+│   │   ├── v1/                # timeline / grid 双视图（目前是骨架）
 │   │   └── current.ts
 │   └── ... 其他可版本化页面
 │
-├── _assets/                   # 跨版本共享的内容资产（详见 asset-organization.md）
+├── _data/                     # 数据层：结构化世界观数据，按域分子目录
+│   └── library/               # entries.ts（年表条目）/ cast.ts（立绘快照）
+│
+├── _assets/                   # 跨版本共享的内容资产（详见 asset-organization.md）   ⏳ 未建
 │   ├── characters/
 │   ├── world/
 │   └── ...
@@ -74,25 +82,31 @@ app/
 │   ├── useAlphaMap.ts         # 图片 alpha 通道位图构建
 │   └── ...
 │
-├── _components/               # 跨页面复用的展示组件（有 UI，纯展示）
-│   └── ... （目前未启用）
+├── _components/               # 跨页面复用的展示组件（有 UI，纯展示）   ⏳ 未建
+│   └── ...
 │
-└── _types/                    # 共享类型定义（世界观类型系统等，目前未启用）
+└── _types/                    # 共享类型定义
+    └── library.ts             # 年表条目 / 世界内日期 / 立绘快照
 ```
+
+> ⏳ 标记的目录是**规划位置，尚未创建**——等第一个真实需求出现时再建，不预建占位（见 §六）。
+> 目前 `app/` 下真实存在的还有 `testview/`（字体与色板预览页，开发自用，非站点内容）。
 
 ### 关于 `app/_xxx/` 前缀约定
 
 Next.js App Router 中 `app/` 下以 `_` 开头的目录**不参与路由**（保留命名），是官方推荐的"组织性目录"约定。本项目全部按此约定组织跨页面/跨版本共享的内容：
 
-| 目录 | 内容 |
-|---|---|
-| `_experiences/` | 各页面的版本实现（会随版本更新） |
-| `_assets/` | 跨版本共享的内容资产 |
-| `_lib/` | 无 UI 的工具函数与 hook |
-| `_components/` | 有 UI 的共享展示组件（预留） |
-| `_types/` | 共享 TypeScript 类型（预留） |
+| 目录 | 内容 | 状态 |
+|---|---|---|
+| `_shell/` | 外壳层实现（导航等全站部件） | 已启用（`Nav/`） |
+| `_experiences/` | 各页面的版本实现（会随版本更新） | 已启用（`home/`、`library/`） |
+| `_data/` | 数据层：结构化世界观数据，按域分子目录 | 已启用（`library/`） |
+| `_lib/` | 无 UI 的工具函数与 hook | 已启用 |
+| `_types/` | 共享 TypeScript 类型 | 已启用（`library.ts`） |
+| `_assets/` | 跨版本共享的内容资产 | 未建（尚无跨版本共享需求，资产先放 `v<N>/assets/`） |
+| `_components/` | 有 UI 的共享展示组件 | 未建 |
 
-**数据层**（角色档案、势力关系、章节正文等结构化世界观数据）后续按需在 `_data/` 或 `_types/` 下建立。
+**数据层的落地方式**（2026-07-27 定）：结构化数据按**域**放 `app/_data/<域>/`，对应的类型放 `app/_types/<域>.ts`。数据与类型都在体验层之外，这样同一份数据能被同一页面的多个视图（如藏书阁的 timeline / grid）以及将来的 v2 共同消费——即三层模型里"换演出不动剧本"的具体实现。章节正文是例外：它走 MDX 文件，不进 `_data/`。
 
 ### 路由分组 `(reading)` 与 `(experience)`
 
@@ -102,6 +116,8 @@ Next.js App Router 中 `(name)` 是路由分组——不进入 URL 路径，但�
 - **体验区 layout**：全宽布局、加载所有动画库、可全屏沉浸；
 
 URL 上读者看到的是 `/chapters/01-mist`、`/world`、`/characters/lin-shen`，干净直接，分组只是内部的组织手段。
+
+**当前两个分组都还没建**。分组的唯一价值是"挂一个不同的 `layout.tsx`"，而阅读区一个页面都还不存在，"某些路由需要不同 layout"目前是空想需求。所以新页面先直接落在 `app/<route>/`（如 `app/library/page.tsx`），等阅读区真开工、两种 layout 的差异变具体时再一起拆——那时移动一个薄壳文件的成本和现在一样低。
 
 ### `app/page.tsx` 与 `current.ts`
 
@@ -173,5 +189,6 @@ export { default } from './v1/HomeV1'
 
 ## 八、决策变更日志
 
+- **2026-07-27**：数据层从"后续按需建立"落地为 `app/_data/<域>/` + `app/_types/<域>.ts`（首个域是 `library`）。目录图与 `_xxx` 表补上实际存在的 `_shell/`，并给未创建的目录（`(reading)` / `(experience)` / `_assets/` / `_components/`）加上"未建"标记——此前它们混在图里，容易被读成已存在。同时明确：路由分组暂不建，新页面先直接落 `app/<route>/`（`/library` 即如此）。三层模型与版本化机制本身未变。见 [`logs/2026-07-27-library-skeleton.md`](../logs/2026-07-27-library-skeleton.md)。
 - **2026-07-02**：明确 `app/_xxx/` 前缀约定作为共享目录的统一命名规则；`_lib/`（工具与 hook）替换初版目录图中假设的 `src/lib/`；补充 `_assets/` / `_components/` / `_types/` 的位置定义，与 [`asset-organization.md`](./asset-organization.md) 对齐。此前 hitTest.ts / useAlphaMap.ts 被放在项目根 `util/`，现已迁至 `app/_lib/`。
 - **2026-06-09**：初版定稿。确定剧院三层模型（外壳 / 体验 / 数据），路由分组 `(reading)` 与 `(experience)`，`_experiences/` + `current.ts` 版本化模式，首页 v1 采用定屏入口式。
