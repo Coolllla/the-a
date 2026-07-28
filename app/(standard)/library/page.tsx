@@ -2,8 +2,7 @@
 // 版本升级时改 _experiences/library/current.ts 一行即可，本文件不动。
 // 见 doc/decisions/architecture.md 三。
 //
-// 注：暂不建 (experience) 路由分组 —— 分组的唯一价值是独立 layout，
-// 而 (reading) 还不存在，等阅读区真开工时再一起拆，成本一样低。
+// 位于 (standard) 分组内，由该分组 layout 提供默认（浅色）姿态的 Nav。
 
 import LibraryCurrent from "@/app/_experiences/library/current";
 

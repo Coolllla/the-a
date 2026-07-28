@@ -23,14 +23,17 @@ pnpm dev        # http://localhost:3000
 
 ```
 app/
-├── layout.tsx              # 全局外壳(导航、字体、主题)
-├── page.tsx                # 首页薄壳,转发到 _experiences/home/current
-├── library/page.tsx        # 藏书阁薄壳
+├── layout.tsx              # 全局外壳(<html>/<body>、字体、主题默认值)
+├── (immersive)/            # 深色沉浸分组:layout 挂 <Nav theme="dark" />
+│   └── page.tsx            #   首页薄壳,URL 仍是 /
+├── (standard)/             # 浅底常规分组:layout 挂 <Nav />
+│   ├── library/page.tsx    #   藏书阁薄壳,URL 仍是 /library
+│   └── testview/           #   字体与色板预览页(开发自用)
 ├── _shell/                 # 外壳层实现(Nav)
 ├── _experiences/           # 版本化体验层(见下)
 ├── _data/  _types/         # 数据层:结构化世界观数据 + 其类型
 ├── _lib/                   # 无 UI 的工具与 hook
-└── ⏳ _assets/ _components/ (reading)/ (experience)/   # 已规划,尚未创建
+└── ⏳ _assets/ _components/ (reading)/   # 已规划,尚未创建
 doc/                        # 决策记录、笔记、会话日志(不参与构建)
 public/                     # 稳定 URL 资源(favicon、字体、章节插图、大体积媒体)
 ```
@@ -48,14 +51,17 @@ app/_experiences/home/
 
 改版时新建 `v<N>/` 并切换 `current.ts` 的转发目标,历史版本代码留在仓库里随时能重温。详见 [`doc/decisions/architecture.md`](doc/decisions/architecture.md)。
 
-### 两个路由分区
+### 路由分组
 
-| 分区 | 路由 | 特点 |
+分组名不进 URL,只用于挂载不同的 `layout.tsx`。本项目用它决定**导航栏的呈现姿态**——Nav 不在根 layout,而由各分组 layout 用 props 声明:
+
+| 分组 | 路由 | Nav 姿态 |
 |---|---|---|
-| `(reading)` 阅读区 | `/chapters/<slug>`、`/archive` | 窄栏、稳重排版、零重动效,**不加载**重动画库 |
-| `(experience)` 体验区 | `/world`、`/codex`、`/characters/<slug>` | 全宽、沉浸、可用全部动画能力 |
+| `(immersive)` 沉浸区 | `/` | 深色、悬浮在满屏画面之上 |
+| `(standard)` 常规区 | `/library`、`/testview` | 浅色默认姿态 |
+| ⏳ `(reading)` 阅读区 | `/chapters/<slug>`、`/archive` | 窄栏、零重动效,**不加载**重动画库(未建) |
 
-路由分组名不进 URL,只用于挂载不同的 `layout.tsx`。**两个分组目前都还没建**——阅读区一个页面都还没有,分组会等两种 layout 的差异真正具体时再拆;新页面先直接落在 `app/<route>/`(如 `/library`)。
+⚠️ **新增页面必须放进某个分组**,否则该页面不会有导航栏。理由与取舍见 [`doc/decisions/architecture.md`](doc/decisions/architecture.md) §三。
 
 ## 内容工作流
 

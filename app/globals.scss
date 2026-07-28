@@ -37,11 +37,14 @@
 // 组件的 SCSS 里只用 var(--xxx) 引用，不要在组件里再定义主题变量。
 [data-theme="light"] {
   --active-color: var(--highlight-yellow-darker);
+  --nav-fg: var(--text-ink);
   // TODO 后续追加：--nav-fg / --nav-bg / --card-bg / --btn-primary-bg 等
 }
 
 [data-theme="dark"] {
   // TODO 深色主题变量
+  --active-color: var(--highlight-yellow);
+  --nav-fg: #f5f5f4;
 }
 
 @media (prefers-color-scheme: dark) {

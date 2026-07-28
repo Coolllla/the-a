@@ -97,6 +97,8 @@
 
 ### 十、暂不建 `(experience)` 路由分组
 
+> ⚠️ **已被 [2026-07-28](./2026-07-28-nav-route-groups.md) 推翻**：真需求次日就出现了（首页要深色 Nav、其余页面浅色），于是建了 `(immersive)` / `(standard)` 两个分组，`/library` 已迁至 `app/(standard)/library/page.tsx`（URL 不变）。`(experience)` 本身确实没建——它的诉求被 `(immersive)` 覆盖了，见新 log §四"两条不重合的轴"。
+
 [architecture.md](../decisions/architecture.md) 规划了 `(reading)` / `(experience)` 分组，但分组的**唯一价值是独立 layout**，而 `(reading)` 还不存在，"某些路由需要不同 layout"目前是空想需求。等阅读区真开工时一起拆，成本一样低。
 
 沿用 [2026-07-24 log](./2026-07-24-nav-final-wiring.md) 里"排除路由分组"的同一条推理，不是新决策。

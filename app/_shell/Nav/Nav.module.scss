@@ -59,7 +59,7 @@
   // 阻断 <li> 内部的软换行机会：text 与 ::after 的 "|" 绑在一起，
   // 视口窄导致 flex 压缩时不会把分隔符甩到下一行。
   white-space: nowrap;
-
+  
   &:not(:last-child) {
     &::after {
       content: "|";
@@ -76,7 +76,7 @@
 .link {
   position: relative;
   text-decoration: none;
-  color: inherit;
+  color: var(--nav-fg);
   display: inline-block;
   filter: drop-shadow(0 0 0 transparent);
   transition: filter 0.2s ease-in-out;

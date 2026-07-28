@@ -8,6 +8,8 @@
 
 ### 一、Nav 挂点回归外壳层
 
+> ⚠️ **本节已被 [2026-07-28](./2026-07-28-nav-route-groups.md) 超越**：Nav 已从根 `layout.tsx` 卸下，改由 `app/(immersive)/layout.tsx` 与 `app/(standard)/layout.tsx` 分别挂载，用 `NavMode` props 声明姿态。下面"排除路由分组"的推理在当时成立（确实没有需求），但 07-28 出现了真需求——首页要深色 Nav、其余页面浅色，而单一挂点做不到。本节保留为过程记录，读时按"已被推翻"处理。
+
 按 [`decisions/architecture.md`](../decisions/architecture.md) §三目录结构第 42 行 `app/layout.tsx # 全局外壳（导航、字体、主题 provider）` —— nav 本就应在根 layout。上次为快速看到视觉效果塞进 `HomeV1.tsx` 是明知违反外壳原则的临时接线。本次回归到根 layout，属于**回归决策**（不是修改决策），architecture.md 不用改。
 
 排除的替代方案：路由分组（`app/(with-nav)/...`）—— 当前只有 home + testview 两个页面，"某些路由无 nav"是空想需求，等真出现时再拆分组不迟。
@@ -68,4 +70,5 @@ next/font 的 `variable` 只是变量名，实际 `@font-face` 是通过实例 `
 ## 与其他文档的关系
 
 - Nav 挂点回归 → 无需改 [`decisions/architecture.md`](../decisions/architecture.md)（原文早已规定挂根 layout）
+  → ⚠️ 已过期：[2026-07-28](./2026-07-28-nav-route-groups.md) 改为分组 layout 挂载，architecture.md §三 与 §八 均已随之更新
 - "作用域限定字体"策略尚未反复实践，先留 log 不进 decisions/；出现第二处时再毕业

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { geistMono, geistSans, caveat,openSans } from "./fonts";
-import Nav from "./_shell/Nav/Nav";
 import "./globals.scss";
 
 export const metadata: Metadata = {
@@ -19,10 +18,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" className={fontVariables}>
-      <body data-theme="light">
-        <Nav />
-        {children}
-      </body>
+      {/* Nav 不在这一层 —— 它的呈现姿态按路由分组而异，由各分组 layout 挂载：
+          app/(immersive)/layout.tsx（深色悬浮）、app/(standard)/layout.tsx（默认浅色）。
+          新建路由时记得归入某个分组，否则该路由不会有 Nav。 */}
+      <body data-theme="light">{children}</body>
     </html>
   );
 }

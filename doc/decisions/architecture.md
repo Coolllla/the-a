@@ -39,22 +39,24 @@ the-a 不是一个静态展示站点，它有两个不寻常的需求：
 
 ```
 app/
-├── layout.tsx                 # 全局外壳（导航、字体、主题 provider）
-├── page.tsx                   # 首页入口（薄壳，转发到 _experiences/home/current）
-├── library/page.tsx           # 藏书阁入口（薄壳，转发到 _experiences/library/current）
+├── layout.tsx                 # 全局外壳（<html>/<body>、字体变量、主题默认值）
+│                              #   注意：不挂 Nav，Nav 由各路由分组的 layout 挂
 │
-├── (reading)/                 # 阅读区路由分组——稳定，所有版本共用   ⏳ 未建
+├── (immersive)/               # 沉浸型分组——深色满屏画面，Nav 悬浮其上
+│   ├── layout.tsx             # <Nav theme="dark" />，不做顶部 padding
+│   └── page.tsx               # 首页入口（URL 仍是 /，薄壳转发到 home/current）
+│
+├── (standard)/                # 常规分组——浅底页面，Nav 走默认姿态
+│   ├── layout.tsx             # <Nav />（全部走 DEFAULTS）
+│   ├── library/page.tsx       # 藏书阁入口（URL 仍是 /library）
+│   └── testview/              # 字体与色板预览页（开发自用，非站点内容）
+│
+├── (reading)/                 # 阅读区路由分组——窄栏、不加载重动画库   ⏳ 未建
 │   ├── chapters/[slug]/page.tsx
-│   ├── archive/page.tsx
-│   └── layout.tsx             # 窄栏布局、克制动效、不加载重动画库
-│
-├── (experience)/              # 体验区路由分组——会随版本更新   ⏳ 未建
-│   ├── world/page.tsx
-│   ├── codex/page.tsx
-│   └── characters/page.tsx
+│   └── archive/page.tsx
 │
 ├── _shell/                    # 外壳层的实现（跨全站、不随版本变）
-│   └── Nav/                   # 全站导航（挂在根 layout.tsx）
+│   └── Nav/                   # 全站导航（由分组 layout 挂载，见 §三·路由分组）
 │
 ├── _experiences/              # ⭐ 各页面的"版本实现"
 │   ├── home/
@@ -90,7 +92,7 @@ app/
 ```
 
 > ⏳ 标记的目录是**规划位置，尚未创建**——等第一个真实需求出现时再建，不预建占位（见 §六）。
-> 目前 `app/` 下真实存在的还有 `testview/`（字体与色板预览页，开发自用，非站点内容）。
+> `(experience)` 分组已不再规划为独立分组，原因见 §三·路由分组末尾的"两条轴"说明。
 
 ### 关于 `app/_xxx/` 前缀约定
 
@@ -108,23 +110,37 @@ Next.js App Router 中 `app/` 下以 `_` 开头的目录**不参与路由**（�
 
 **数据层的落地方式**（2026-07-27 定）：结构化数据按**域**放 `app/_data/<域>/`，对应的类型放 `app/_types/<域>.ts`。数据与类型都在体验层之外，这样同一份数据能被同一页面的多个视图（如藏书阁的 timeline / grid）以及将来的 v2 共同消费——即三层模型里"换演出不动剧本"的具体实现。章节正文是例外：它走 MDX 文件，不进 `_data/`。
 
-### 路由分组 `(reading)` 与 `(experience)`
+### 路由分组：`(immersive)` / `(standard)` 已建，`(reading)` 规划中
 
-Next.js App Router 中 `(name)` 是路由分组——不进入 URL 路径，但提供独立的 `layout.tsx`。利用这点：
+Next.js App Router 中 `(name)` 是路由分组——不进入 URL 路径，但提供独立的 `layout.tsx`。URL 上读者看到的仍是 `/`、`/library`、`/chapters/01-mist`，分组纯属内部组织手段。
 
-- **阅读区 layout**：窄栏、稳重排版、零重动效，**不加载** GSAP / Motion 等重动画库；
-- **体验区 layout**：全宽布局、加载所有动画库、可全屏沉浸；
+**2026-07-28 起，全站页面必须归入某个分组**，因为 Nav 挂在分组 layout 上而不在根 layout：
 
-URL 上读者看到的是 `/chapters/01-mist`、`/world`、`/characters/lin-shen`，干净直接，分组只是内部的组织手段。
+| 分组 | Nav 姿态 | 页面 |
+|---|---|---|
+| `(immersive)` | `<Nav theme="dark" />`，悬浮不让位 | `/`（首页） |
+| `(standard)` | `<Nav />` 走 DEFAULTS（浅色） | `/library`、`/testview` |
 
-**当前两个分组都还没建**。分组的唯一价值是"挂一个不同的 `layout.tsx`"，而阅读区一个页面都还不存在，"某些路由需要不同 layout"目前是空想需求。所以新页面先直接落在 `app/<route>/`（如 `app/library/page.tsx`），等阅读区真开工、两种 layout 的差异变具体时再一起拆——那时移动一个薄壳文件的成本和现在一样低。
+> ⚠️ **落在两个分组之外的页面不会有 Nav**（如直接建 `app/foo/page.tsx`）。这是当前结构唯一容易踩的坑，根 `layout.tsx` 里留了注释提醒。
 
-### `app/page.tsx` 与 `current.ts`
+**为什么 Nav 不挂根 layout**：Nav 的呈现姿态（深/浅色、是否悬浮、滚动行为）按页面而异，首页是深色满屏画面、藏书阁是浅底文档流。挂根 layout 只能给全站一种姿态；要按路由变，只有两条路——
+
+1. Nav 自己用 `usePathname()` 判断当前路由 → Nav 必须变 Client Component（水合成本 + 首帧颜色闪烁），且要维护一份与 `NAV_ITEMS` 并行的路由→姿态映射表；
+2. 由分组 layout 用 props 声明姿态 → **采用这条**。Nav 保持 Server Component、零水合、无闪烁，新增页面只需选一个分组目录，不用回头改 Nav。
+
+这正是 §二"外壳层稳定"的正确形态：会变的是**姿态的选择**（分组 layout 一行 props），不是 Nav 自己。
+
+#### 两条不重合的轴
+
+`(immersive)` / `(standard)` 分的是 **Nav 姿态**轴；初版规划的 `(reading)` / `(experience)` 分的是**布局与动效负载**轴（窄栏 vs 全宽、是否加载重动画库）。两者不重合——将来 `world` / `codex` 大概率属于"体验区"（重动效）但要浅色 Nav。
+
+因此 `(experience)` 不再作为独立分组：它的诉求已被 `(immersive)` 覆盖或将由页面自身承担。`(reading)` 仍保留规划，因为"不加载重动画库"是真实的打包差异，且 Next.js 分组可嵌套——阅读区开工时写成 `app/(standard)/(reading)/chapters/[slug]/` 即可，两条轴互不打架。
+
+### 页面薄壳与 `current.ts`
 
 ```tsx
-// app/page.tsx
-import HomeCurrent from '@/app/_experiences/home/current'
-export default HomeCurrent
+// app/(immersive)/page.tsx —— URL 是 /，分组名不进路径
+export { default } from '@/app/_experiences/home/current'
 ```
 
 ```ts
@@ -133,6 +149,8 @@ export { default } from './v1/HomeV1'
 ```
 
 升级到 v2 时只改 `current.ts` 一行。
+
+> ⚠️ **分组目录内一律用 `@/app/...` 别名 import，不用相对路径**。分组名不进 URL，但**确实增加一层文件系统深度**——把 `app/page.tsx` 移进 `app/(immersive)/` 后，原来的 `./_experiences/...` 就断了。用别名可免疫这类移动。
 
 **老版本代码不删**——保留在 `_experiences/home/v1/` 中，将来可作为"归档版本"页面（如 `/archive/home/v1`）让访客重温旧版主页，对长期更新的世界观站是天然合适的额外功能。
 
@@ -182,13 +200,14 @@ export { default } from './v1/HomeV1'
 ## 七、与其他决策的关系
 
 - 与 [`tech-stack.md`](./tech-stack.md) 中"组件 props-driven、类型集中"的 monorepo 准备约定一致；
-- 与"阅读区动效克制 / 体验区可重动画"的产品定位通过 `(reading)` `(experience)` 路由分组在架构上得到落地；
+- "阅读区动效克制 / 体验区可重动画"的产品定位仍将通过 `(reading)` 分组落地（体验区诉求已并入 `(immersive)`，见 §三·两条轴）；
 - "数据层独立"为后续从 MDX 迁移到 CMS 留下平滑通道——只换数据源，体验层不受影响。
 
 ---
 
 ## 八、决策变更日志
 
+- **2026-07-28**：**推翻"暂不建路由分组"**（该判断由 2026-07-27 条与 2026-07-24 log 立下，理由是"某些路由需要不同 layout"属空想需求）。真实需求出现了：首页需要深色 Nav、其余页面浅色，而 Nav 挂在根 layout 时无法按路由变姿态。故建 `(immersive)` / `(standard)` 两个分组，各自 layout 用 props 声明 `NavMode`，Nav 从根 layout 卸下并保持 Server Component。`app/page.tsx` → `app/(immersive)/page.tsx`，`app/library/`、`app/testview/` → `app/(standard)/` 下（URL 全部不变）。同时确定 `(immersive)`/`(standard)` 与初版规划的 `(reading)`/`(experience)` 是**两条不重合的轴**：`(experience)` 不再作为独立分组，`(reading)` 保留规划并可嵌套在 `(standard)` 内。三层模型与版本化机制本身未变。见 [`logs/2026-07-28-nav-route-groups.md`](../logs/2026-07-28-nav-route-groups.md)。
 - **2026-07-27**：数据层从"后续按需建立"落地为 `app/_data/<域>/` + `app/_types/<域>.ts`（首个域是 `library`）。目录图与 `_xxx` 表补上实际存在的 `_shell/`，并给未创建的目录（`(reading)` / `(experience)` / `_assets/` / `_components/`）加上"未建"标记——此前它们混在图里，容易被读成已存在。同时明确：路由分组暂不建，新页面先直接落 `app/<route>/`（`/library` 即如此）。三层模型与版本化机制本身未变。见 [`logs/2026-07-27-library-skeleton.md`](../logs/2026-07-27-library-skeleton.md)。
 - **2026-07-02**：明确 `app/_xxx/` 前缀约定作为共享目录的统一命名规则；`_lib/`（工具与 hook）替换初版目录图中假设的 `src/lib/`；补充 `_assets/` / `_components/` / `_types/` 的位置定义，与 [`asset-organization.md`](./asset-organization.md) 对齐。此前 hitTest.ts / useAlphaMap.ts 被放在项目根 `util/`，现已迁至 `app/_lib/`。
 - **2026-06-09**：初版定稿。确定剧院三层模型（外壳 / 体验 / 数据），路由分组 `(reading)` 与 `(experience)`，`_experiences/` + `current.ts` 版本化模式，首页 v1 采用定屏入口式。
