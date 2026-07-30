@@ -1,0 +1,42 @@
+// CardShell —— 行为壳的布局样式。只有定位 / 层级 / 命中区，没有视觉。
+// 卡长什么样（尺寸、底图、圆角、投影）全部由各角色卡组件自己决定。
+
+// 透明点击接收层：点卡外任意处关闭。
+// 视觉压暗不在这层做（由 HomeV1 对非选中 slot 做虚化），
+// 若将来需要整体再压一层暗，给它加背景色即可。
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 300;
+  background: transparent;
+}
+
+// 卡的停靠容器：贴屏幕一侧、垂直居中，自身不吃点击
+// （空白处点击穿透给 scrim 关卡），只有卡本体可交互。
+.panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 310;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+
+  &[data-side="left"] {
+    left: 0;
+    padding-left: 4rem;
+  }
+
+  &[data-side="right"] {
+    right: 0;
+    padding-right: 4rem;
+  }
+
+  &:focus {
+    outline: none; // 焦点是程序移入的（Esc/Tab 起点），不需要可见环；卡内链接自己有 :focus-visible
+  }
+}

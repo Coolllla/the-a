@@ -1,0 +1,52 @@
+.card {
+  position: relative;
+  width: min(84rem, 72vw);
+}
+
+.base {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.avatarLayer {
+  display: block;
+  position: absolute;
+  width: 24.4%;
+  left: 72%;
+  top: 33.5%;
+  img {
+    width: 100%;
+    height: auto;
+  }
+}
+
+.more {
+  position: absolute;
+  display: block;
+  left: 68%;
+  top: 74.5%;
+  width: 30.662%;
+  aspect-ratio: 421 / 203;
+
+  .moreHover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: auto;
+    opacity: 0;
+    clip-path: polygon(0 0, 13% 0, 5% 100%, 0 100%);
+    transition: opacity 0.1s ease, clip-path 0.2s ease-in-out;
+  }
+
+  &:hover .moreHover,
+  &:focus-visible .moreHover {
+    opacity: 1;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-red);
+    outline-offset: 2px;
+  }
+}
