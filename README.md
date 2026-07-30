@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-早期开发中。已完成首页 v1(视差交互)与全站导航;藏书阁 `/library` 目前只有**目录骨架与数据层**(时间轴 / 方格双视图的组件都是空壳,等美术资产就位再实现);**内容管道(MDX)尚未集成**,阅读区与体验区的页面还未实现。
+早期开发中。已完成首页 v1(视差交互)与全站导航;藏书阁 `/library` 目前是**空页面**(形态已定:时间轴 + 方格双视图,见 [`doc/logs/2026-07-27-library-skeleton.md`](doc/logs/2026-07-27-library-skeleton.md));**内容管道(MDX)尚未集成**,阅读区的页面还未实现。
 
 ## 快速开始
 
@@ -31,9 +31,8 @@ app/
 │   └── testview/           #   字体与色板预览页(开发自用)
 ├── _shell/                 # 外壳层实现(Nav)
 ├── _experiences/           # 版本化体验层(见下)
-├── _data/  _types/         # 数据层:结构化世界观数据 + 其类型
 ├── _lib/                   # 无 UI 的工具与 hook
-└── ⏳ _assets/ _components/ (reading)/   # 已规划,尚未创建
+└── ⏳ _data/ _types/ _assets/ _components/ (reading)/   # 已规划,尚未创建
 doc/                        # 决策记录、笔记、会话日志(不参与构建)
 public/                     # 稳定 URL 资源(favicon、字体、章节插图、大体积媒体)
 ```

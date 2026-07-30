@@ -40,12 +40,16 @@
   margin: 0;
   display: flex;
   gap: 0;
-  opacity: 0.2;
+  opacity: 0.7;
 
   transition: all 0.2s ease-in-out;
 
   &:hover {
-    opacity: 0.7;
+    .link{
+      opacity: .8;
+    }
+
+    opacity: 1;
 
     .item::after {
       padding: 0 1em;
@@ -59,7 +63,7 @@
   // 阻断 <li> 内部的软换行机会：text 与 ::after 的 "|" 绑在一起，
   // 视口窄导致 flex 压缩时不会把分隔符甩到下一行。
   white-space: nowrap;
-  
+
   &:not(:last-child) {
     &::after {
       content: "|";
@@ -79,13 +83,13 @@
   color: var(--nav-fg);
   display: inline-block;
   filter: drop-shadow(0 0 0 transparent);
-  transition: filter 0.2s ease-in-out;
-
+  transition: filter 0.2s ease-in-out, opacity 0.2s ease-in-out;
+  opacity: .2;
   &:hover {
     filter: drop-shadow(0 0 8px var(--bg-card));
     animation: fontCycle 1.2s steps(1) infinite;
-  }
 
+  }
   &.active:hover {
     filter: drop-shadow(0 0 0.2em var(--highlight-yellow));
   }
@@ -98,6 +102,7 @@
   color: var(--active-color);
   font-weight: 700;
   font-family: var(--font-caveat);
+  opacity: 1;
   filter: drop-shadow(0 0 0.2em var(--highlight-yellow));
 
   &::after {

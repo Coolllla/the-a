@@ -15,5 +15,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - 页面按"版本化体验层"组织：`app/_experiences/<page>/v<N>/` + `current.ts` 转发；详见 [`doc/decisions/architecture.md`](doc/decisions/architecture.md)。
 - **新建页面必须落在 `app/(immersive)/` 或 `app/(standard)/` 分组内**（深色悬浮 Nav / 浅色默认 Nav）。Nav 挂在分组 layout 上，不在根 layout —— 落在分组外的页面**不会有 Nav**。分组目录内 import 一律用 `@/app/...` 别名，相对路径会因分组的目录深度而断。
 - 决策文档在 [`doc/decisions/`](doc/decisions/)（已稳定的决策只追加、不改正文）；踩坑与思考笔记在 [`doc/notes/`](doc/notes/)（按日期或主题命名，不索引）；AI 协作会话日志在 [`doc/logs/`](doc/logs/)（`YYYY-MM-DD-<slug>.md`，跨会话接力用）。
-- 结构化世界观数据放 `app/_data/<域>/`，对应类型放 `app/_types/<域>.ts`；体验层组件只吃 props，不自己攒数据。
+- 结构化世界观数据放 `app/_data/<域>/`，对应类型放 `app/_types/<域>.ts`（位置约定，两者目前都还没有实例）；体验层组件只吃 props，不自己攒数据。
 - 静态资产命名与存放约定见 [`doc/decisions/asset-organization.md`](doc/decisions/asset-organization.md)。

@@ -59,6 +59,8 @@
 
 ④ 环形季节轴概念上最贴切、辨识度最高，留作将来某版的野心，记在这里免得忘。
 
+> **2026-07-28 变更：番外整体移出藏书阁。** 用户决定给番外单独做一个形态独特的页面来存放与展示，因此时间轴上不再有聚合节点，也**不再需要"轴有末端 / 末端断口"**。这条变更直接影响时间轴的实现选型——见下方"时间轴的移动方式"。
+
 ### 六、支线也上轴，但因此必须让"时间精度"可表达
 
 用户判断"支线也可以按大概的时间排在时间轴上，问题不大"。这句话给数据层加了硬需求：**条目的时间精度天生不齐**——主线可能精确到日，支线只知道"大约在那个时期"，番外压根没有世界内时间。
@@ -102,6 +104,21 @@
 [architecture.md](../decisions/architecture.md) 规划了 `(reading)` / `(experience)` 分组，但分组的**唯一价值是独立 layout**，而 `(reading)` 还不存在，"某些路由需要不同 layout"目前是空想需求。等阅读区真开工时一起拆，成本一样低。
 
 沿用 [2026-07-24 log](./2026-07-24-nav-final-wiring.md) 里"排除路由分组"的同一条推理，不是新决策。
+
+---
+
+### 十一、时间轴的移动方式（2026-07-28 追加）
+
+轴线已定为**笔直**（用户："笔直的更舒服"）。随之而来的选型：滚动时是 **A. 轴固定、节点滑过**，还是 **B. 整条长轴一起移动**？
+
+判据一：**一条笔直无纹理的线，动和不动在视觉上无法分辨**。移动它不产生任何观感收益，除非轴上有刻度——那时真正在动的信号是刻度，问题变成"刻度跟谁走"。
+
+判据二（决定性）：B 的实质优势只有"能看见轴的两端"。而番外已移出藏书阁（见决策五的 07-28 变更），**末端不再承载任何设计**，这个优势归零。
+
+**倾向 A。** 附带两条：
+
+- 两边都需要"轨道总长"（A 用于节点层的位移量，B 用于轴宽 + 位移量）——A 并不能省掉这个数字，只是让它不再决定轴元素的宽度。总长应写成派生值（`(条目数 + 1) * 基准间距`），不要写死。
+- 既然轴是笔直的且不需要端点叙事，**它甚至不必是 SVG**——一个 `div` / 伪元素 + `border-top` 就够，开屏"画出来"用 `transform: scaleX(0→1)` 比 `stroke-dashoffset` 更简单。保留 SVG 的唯一理由是将来可能改回手绘曲线。
 
 ---
 
@@ -238,6 +255,92 @@ AI 当时给的草案分段（**未采纳，仅备参考**，实际要按用户�
 - `_data/` 目录**本次首次启用**——[architecture.md](../decisions/architecture.md) §三只写了"数据层后续按需在 `_data/` 或 `_types/` 下建立"，现已落到 `app/_data/library/`。等第二个数据域（角色档案 / 章节）出现、目录组织方式反复实践后，再决定要不要把这条毕业进 decisions
 - 上面「实现时要注意的坑」A 条（GSAP 演出必须自己处理 `prefers-reduced-motion`）是**全局性认知**，不只 Library 适用。目前只此一例，先留 log；出现第二处 GSAP 演出时应毕业到 `decisions/` 或 `notes/`
 - 不建 `(experience)` 分组沿用 [2026-07-24 log](./2026-07-24-nav-final-wiring.md) 的推理，非新决策
+
+### 一条协作教训（二）：骨架也嫌多，已于 2026-07-28 全部清空
+
+用户读了骨架后的反应：**"不是我一步步搭起来的话我就会晕掉这些是要干什么的了，毕竟不是我的代码习惯。"**
+
+这是比"实现写多了"更根本的一条：**十几个空文件 + 一套别人设计的 schema，本身就是认知负担**。哪怕每个文件都写了意图注释，读注释理解别人的目录划分，成本并不比自己从零建低——而后者还能顺手长出自己的组织方式。
+
+所以 `app/_experiences/library/v1/` 下除 `LibraryV1.tsx` 外全部删除，`app/_data/` 与 `app/_types/library.ts` 一并删除。**藏书阁改由用户自己一步步搭**，AI 只做辅助（讲方案 / 贴片段 / 查文档 / review / 跑验证）。
+
+上面那些**决策**（时间轴双视图、立绘随时代更替、番外单一聚合节点、时间精度必须可表达、开屏最后做）依然有效——它们是设计结论，不依赖那批文件存在。
+
+---
+
+## 附录：已删除的类型与占位数据（仅存档）
+
+以下代码**已从仓库删除**，且从未提交过。留在这里是因为里面的 schema 设计考量（尤其是"时间精度可表达"）是上面决策的具体落地形态，将来用户自己设计数据层时可以参考——**不是要照抄，也不是待恢复的代码**。
+
+### 曾经的 `app/_types/library.ts`
+
+```ts
+/** 世界内时间。month / day 缺省即表示"只精确到年"，不要用 0 或 1 假装精确。 */
+export type WorldDate = {
+  era?: string;   // 纪元名，如"第三纪"。跨纪元排序需要一张纪元顺序表
+  year: number;
+  month?: number;
+  day?: number;
+};
+
+/**
+ * 时间精度。年表条目精度天生不齐：主线可能精确到日，支线只知道"大约在那个时期"。
+ * 这个字段让"不确定"在视觉上可见（虚化节点 / 区间条），而不是被迫编一个假日期。
+ */
+export type DatePrecision = "exact" | "year" | "approx";
+
+export type When = {
+  start: WorldDate;
+  end?: WorldDate;          // 有 end 即区间事件，轴上渲染成一段而非一个点
+  precision: DatePrecision;
+};
+
+/**
+ * 条目种类。同时驱动两件事：
+ * - timeline：main 在轴上（大节点）、side 挂轴下（小节点）、special 不在轴上（进聚合节点）
+ * - grid：作为筛选维度
+ */
+export type EntryKind = "main" | "side" | "special";
+
+export type Entry = {
+  id: string;
+  title: string;
+  kind: EntryKind;
+  when?: When;        // special（节日番外）没有世界内时间，故可选
+  realDate?: string;  // 现实产出时间，ISO 串。special 主要靠它排序
+  summary: string;
+  cover?: string;
+  href: string;
+  tags?: string[];
+};
+
+/** 立绘快照：随时代推进更替的主角团形象（换人 / 长大 / 新成员加入）。 */
+export type CastShot = {
+  id: string;
+  from: WorldDate;   // 这版从哪个时间点起生效，按 from 升序即得更替顺序
+  src: string;       // 动画 WebP 或精灵图，不用 GIF
+  members: string[]; // 出场角色，用于 alt 与 hover 说明
+};
+
+/** 视图模式。存在 URL 的 ?view= 里，不进全局状态库。 */
+export type LibraryView = "timeline" | "grid";
+```
+
+### 曾经的占位数据形状
+
+`app/_data/library/entries.ts` 里是 7 条 `占位 · 主线事件一` 之类的条目，刻意覆盖全部情况以便看到每种视觉状态：
+
+| id | kind | when | 覆盖的情况 |
+|---|---|---|---|
+| `placeholder-main-1` | main | 第一纪 12 年，`precision: "year"` | 只精确到年的主线 |
+| `placeholder-side-1` | side | 第一纪 15 年，`precision: "approx"` | 大约某时期 → 节点虚化 |
+| `placeholder-main-2` | main | 第二纪 3 年 4 月 → 第二纪 6 年 | 区间事件 → 渲染成一段 |
+| `placeholder-side-2` | side | 第二纪 8 年 | 普通支线 |
+| `placeholder-main-3` | main | 第三纪 1 年 9 月 20 日 | 最高精度 |
+| `placeholder-special-newyear` | special | 无 `when`，`realDate: "2026-01-01"` | 番外只有现实时间 |
+| `placeholder-special-qingming` | special | 无 `when`，`realDate: "2026-04-05"` | 同上 |
+
+`app/_data/library/cast.ts` 里是 3 条 `CastShot`，`src` 全为空串（资产未产出），`members` 按纪元递增：第一纪 `[bearu, duke]` → 第二纪 `+pearuth` → 第三纪 `+worl, dorath`（角色名取自 `app/_experiences/home/v1/config.ts`），用来表达"随时代加人"这个设定。
 
 ### 一条协作教训
 

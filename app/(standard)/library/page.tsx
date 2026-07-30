@@ -7,7 +7,7 @@
 import LibraryCurrent from "@/app/_experiences/library/current";
 
 export const metadata = {
-  title: "藏书阁 · the-a",
+  title: "library · the-a",
   description: "以时间轴排列的世界年表与故事索引。",
 };
 

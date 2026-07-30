@@ -67,12 +67,11 @@ app/
 │   │   │   └── ...
 │   │   └── current.ts         # export { default } from './v1/HomeV1'
 │   ├── library/
-│   │   ├── v1/                # timeline / grid 双视图（目前是骨架）
+│   │   ├── v1/LibraryV1.tsx   # 藏书阁，待实现（空页面）
 │   │   └── current.ts
 │   └── ... 其他可版本化页面
 │
-├── _data/                     # 数据层：结构化世界观数据，按域分子目录
-│   └── library/               # entries.ts（年表条目）/ cast.ts（立绘快照）
+├── _data/                     # 数据层：结构化世界观数据，按域分子目录   ⏳ 未建
 │
 ├── _assets/                   # 跨版本共享的内容资产（详见 asset-organization.md）   ⏳ 未建
 │   ├── characters/
@@ -87,8 +86,7 @@ app/
 ├── _components/               # 跨页面复用的展示组件（有 UI，纯展示）   ⏳ 未建
 │   └── ...
 │
-└── _types/                    # 共享类型定义
-    └── library.ts             # 年表条目 / 世界内日期 / 立绘快照
+└── _types/                    # 共享类型定义   ⏳ 未建
 ```
 
 > ⏳ 标记的目录是**规划位置，尚未创建**——等第一个真实需求出现时再建，不预建占位（见 §六）。
@@ -102,13 +100,15 @@ Next.js App Router 中 `app/` 下以 `_` 开头的目录**不参与路由**（�
 |---|---|---|
 | `_shell/` | 外壳层实现（导航等全站部件） | 已启用（`Nav/`） |
 | `_experiences/` | 各页面的版本实现（会随版本更新） | 已启用（`home/`、`library/`） |
-| `_data/` | 数据层：结构化世界观数据，按域分子目录 | 已启用（`library/`） |
 | `_lib/` | 无 UI 的工具函数与 hook | 已启用 |
-| `_types/` | 共享 TypeScript 类型 | 已启用（`library.ts`） |
+| `_data/` | 数据层：结构化世界观数据，按域分子目录 | 未建 |
+| `_types/` | 共享 TypeScript 类型 | 未建 |
 | `_assets/` | 跨版本共享的内容资产 | 未建（尚无跨版本共享需求，资产先放 `v<N>/assets/`） |
 | `_components/` | 有 UI 的共享展示组件 | 未建 |
 
-**数据层的落地方式**（2026-07-27 定）：结构化数据按**域**放 `app/_data/<域>/`，对应的类型放 `app/_types/<域>.ts`。数据与类型都在体验层之外，这样同一份数据能被同一页面的多个视图（如藏书阁的 timeline / grid）以及将来的 v2 共同消费——即三层模型里"换演出不动剧本"的具体实现。章节正文是例外：它走 MDX 文件，不进 `_data/`。
+**数据层的规划位置**：结构化数据按**域**放 `app/_data/<域>/`，对应的类型放 `app/_types/<域>.ts`——都在体验层之外，这样同一份数据能被同一页面的多个视图以及将来的 v2 共同消费，即三层模型里"换演出不动剧本"的具体实现。章节正文是例外：它走 MDX 文件，不进 `_data/`。
+
+> 这只是**位置约定**，目前没有任何实例。2026-07-27 曾按此建过 `_data/library/` + `_types/library.ts`（藏书阁年表的 schema 与占位数据），但那是 AI 代拟的，用户决定自己重搭，已于 2026-07-28 删除——形状可参考 [`logs/2026-07-27-library-skeleton.md`](../logs/2026-07-27-library-skeleton.md) 的附录，但不必照抄。
 
 ### 路由分组：`(immersive)` / `(standard)` 已建，`(reading)` 规划中
 
@@ -207,6 +207,7 @@ export { default } from './v1/HomeV1'
 
 ## 八、决策变更日志
 
+- **2026-07-28**：**撤回 2026-07-27 那条"数据层已落地"**。`_data/library/` 与 `_types/library.ts` 已删除，`_data/` `_types/` 回到"规划位置、未建"状态。原因不是方案有问题，而是那套 schema 与占位数据由 AI 代拟，用户读了之后判断"不是自己一步步搭起来的，会晕掉这些是干什么的"——藏书阁改由用户自己搭，AI 转为辅助。位置约定（`_data/<域>/` + `_types/<域>.ts`）保留为约定。同时 `_experiences/library/v1/` 下的十余个占位组件也一并删除，只留 `LibraryV1.tsx` 空页面。
 - **2026-07-28**：**推翻"暂不建路由分组"**（该判断由 2026-07-27 条与 2026-07-24 log 立下，理由是"某些路由需要不同 layout"属空想需求）。真实需求出现了：首页需要深色 Nav、其余页面浅色，而 Nav 挂在根 layout 时无法按路由变姿态。故建 `(immersive)` / `(standard)` 两个分组，各自 layout 用 props 声明 `NavMode`，Nav 从根 layout 卸下并保持 Server Component。`app/page.tsx` → `app/(immersive)/page.tsx`，`app/library/`、`app/testview/` → `app/(standard)/` 下（URL 全部不变）。同时确定 `(immersive)`/`(standard)` 与初版规划的 `(reading)`/`(experience)` 是**两条不重合的轴**：`(experience)` 不再作为独立分组，`(reading)` 保留规划并可嵌套在 `(standard)` 内。三层模型与版本化机制本身未变。见 [`logs/2026-07-28-nav-route-groups.md`](../logs/2026-07-28-nav-route-groups.md)。
 - **2026-07-27**：数据层从"后续按需建立"落地为 `app/_data/<域>/` + `app/_types/<域>.ts`（首个域是 `library`）。目录图与 `_xxx` 表补上实际存在的 `_shell/`，并给未创建的目录（`(reading)` / `(experience)` / `_assets/` / `_components/`）加上"未建"标记——此前它们混在图里，容易被读成已存在。同时明确：路由分组暂不建，新页面先直接落 `app/<route>/`（`/library` 即如此）。三层模型与版本化机制本身未变。见 [`logs/2026-07-27-library-skeleton.md`](../logs/2026-07-27-library-skeleton.md)。
 - **2026-07-02**：明确 `app/_xxx/` 前缀约定作为共享目录的统一命名规则；`_lib/`（工具与 hook）替换初版目录图中假设的 `src/lib/`；补充 `_assets/` / `_components/` / `_types/` 的位置定义，与 [`asset-organization.md`](./asset-organization.md) 对齐。此前 hitTest.ts / useAlphaMap.ts 被放在项目根 `util/`，现已迁至 `app/_lib/`。

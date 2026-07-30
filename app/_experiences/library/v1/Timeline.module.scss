@@ -1,0 +1,19 @@
+.stage {
+    position: absolute;
+    width: 100%;
+    top: 50%;
+    left: 0;
+}
+
+.axis {
+    display: block;
+    width: 100%;
+    height: 4rem;
+    mask-image: linear-gradient(to right,transparent 2%,#000 8%, #000 92%,transparent 98%);
+    path {
+        fill: none;
+        stroke: var(--text-ink);
+        stroke-width: 1;
+        stroke-linecap: round;
+    }
+}
