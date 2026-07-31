@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { geistMono, geistSans, caveat,openSans } from "./fonts";
+import { geistMono, geistSans, caveat, openSans, notoSerifSc } from "./fonts";
 import "./globals.scss";
 
 export const metadata: Metadata = {
@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "A worldbuilding site for the novel.",
 };
 
-const fonts = [geistMono, geistSans, caveat,openSans];
+const fonts = [geistMono, geistSans, caveat, openSans, notoSerifSc];
 
 const fontVariables = fonts.map((font) => font.variable).join(" ");
 

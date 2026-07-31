@@ -19,7 +19,7 @@ export function TypeWriter({
 }: Props) {
   const reduceMotion = useReducedMotion();
   const [len, setLen] = useState(0);
-  const done = len > text.length;
+  const done = len >= text.length;
 
   useEffect(() => {
     if (reduceMotion) {
@@ -42,7 +42,9 @@ export function TypeWriter({
 
   return (
     <span aria-label={text}>
-      <span aria-hidden="true">{text.slice(0, len)}</span>
+      <span aria-hidden="true" className={styles.text}>
+        {text.slice(0, len)}
+      </span>
       {caret && !done && <span className={styles.caret}>▌</span>}
     </span>
   );

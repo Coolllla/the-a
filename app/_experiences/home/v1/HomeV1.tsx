@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import CharacterImg from "./CharacterImg";
 import styles from "./HomeV1.module.scss";
-import { CHARACTERS } from "./config";
+import { CARD_SIDE, CHARACTERS } from "./config";
 import { useParallax } from "./useParallax";
 import NameCard from "./NameCard";
 import { DrawRect, getContainRect, hitTestAlpha } from "@/app/_lib/hitTest";
@@ -16,6 +16,8 @@ import {
   useSpring,
 } from "motion/react";
 import { relative } from "path";
+import CardShell from "./cards/CardShell";
+import CardWorl from "./cards/CardWorl";
 
 // hit box 调试开关：开发时改成 true 看红框对不对，验完记得关掉
 const DEBUG_HITBOX = false;
@@ -36,6 +38,7 @@ export default function HomeV1() {
   const springX = useSpring(x, { stiffness: 200, damping: 30 });
   const springY = useSpring(y, { stiffness: 200, damping: 30 });
 
+  const [selected, setSelected] = useState<string | null>(null);
   // 处理透明图片检测==============================================================
   const [hovered, setHovered] = useState<string | null>(null);
   const [pointOver, setPointerOver] = useState(false);
@@ -93,6 +96,8 @@ export default function HomeV1() {
   }, []);
 
   const onMove = (e: React.MouseEvent) => {
+    if (selected) return;
+
     const cx = e.clientX,
       cy = e.clientY;
     x.set(cx);
@@ -118,6 +123,13 @@ export default function HomeV1() {
       setPointerOver(false);
     });
   };
+  // 点击命中检测
+  const handleClick = () => {
+    if (!hovered) return;
+    setSelected(hovered);
+    commitHovered(null);
+  };
+
   // ========================================================
 
   return (
@@ -130,8 +142,10 @@ export default function HomeV1() {
           commitHovered(null);
           setPointerOver(false);
         }}
+        onClick={handleClick}
         style={{ cursor: pointOver ? "pointer" : "default" }}
       >
+        {/* 角色图 */}
         {CHARACTERS.map(({ name, img, zindex, fit }) => (
           <CharacterImg
             key={name}
@@ -147,6 +161,7 @@ export default function HomeV1() {
           />
         ))}
         <AnimatePresence>
+          {/* 姓名tag */}
           {hovered && (
             <motion.div
               style={{
@@ -165,6 +180,15 @@ export default function HomeV1() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* 名片 */}
+        <CardShell
+          cardKey={selected}
+          side={selected ? CARD_SIDE[selected] : "right"}
+          onClose={() => setSelected(null)}
+        >
+          {selected === "worl" && <CardWorl />}
+        </CardShell>
       </div>
     </main>
   );

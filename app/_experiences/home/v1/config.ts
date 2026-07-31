@@ -43,4 +43,11 @@ const CHARACTERS = [
   },
 ];
 
-export { CHARACTERS };
+const CARD_SIDE: Record<string, "left" | "right"> = {
+  worl: "right",
+  pearuth: "left",
+  bearu: "right",
+  duke: "left",
+};
+
+export { CHARACTERS, CARD_SIDE };

@@ -14,7 +14,7 @@
 // 卡的停靠容器：贴屏幕一侧、垂直居中，自身不吃点击
 // （空白处点击穿透给 scrim 关卡），只有卡本体可交互。
 .panel {
-  position: absolute;
+  position: fixed;
   top: 0;
   bottom: 0;
   z-index: 310;
