@@ -15,7 +15,6 @@ import {
   useMotionValue,
   useSpring,
 } from "motion/react";
-import { relative } from "path";
 import CardShell from "./cards/CardShell";
 import CardWorl from "./cards/CardWorl";
 
@@ -152,6 +151,7 @@ export default function HomeV1() {
             name={name}
             imgSrc={img}
             zIndex={zindex}
+            dimmed={selected !== null && name !== selected}
             Fit={fit}
             onImgLoad={handleImgLoad}
             debugRect={DEBUG_HITBOX ? debugRects[name] : undefined}

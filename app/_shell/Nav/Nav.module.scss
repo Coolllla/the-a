@@ -45,8 +45,8 @@
   transition: all 0.2s ease-in-out;
 
   &:hover {
-    .link{
-      opacity: .8;
+    .link {
+      opacity: 0.8;
     }
 
     opacity: 1;
@@ -84,11 +84,11 @@
   display: inline-block;
   filter: drop-shadow(0 0 0 transparent);
   transition: filter 0.2s ease-in-out, opacity 0.2s ease-in-out;
-  opacity: .2;
+  opacity: 0.2;
   &:hover {
     filter: drop-shadow(0 0 8px var(--bg-card));
     animation: fontCycle 1.2s steps(1) infinite;
-
+    animation-delay: 0.3s;
   }
   &.active:hover {
     filter: drop-shadow(0 0 0.2em var(--highlight-yellow));
@@ -153,14 +153,21 @@
 // 这里只放"Nav 特有、跨主题需要差异化"的规则（如 dark 下 nav 特有的背景/边框），
 // 目前尚无内容。
 
-
-
-
 // ----animation----
-    @keyframes fontCycle {
-      0% {font-family: var(--font-cycled-a);}
-      25% {font-family: var(--font-cycled-b);}
-      50% {font-family: var(--font-cycled-c);}
-      75% {font-family: var(--font-cycled-d);}
-      100% {font-family: var(--font-cycled-d);}
-    }
+@keyframes fontCycle {
+  0% {
+    font-family: var(--font-cycled-a);
+  }
+  25% {
+    font-family: var(--font-cycled-b);
+  }
+  50% {
+    font-family: var(--font-cycled-c);
+  }
+  75% {
+    font-family: var(--font-cycled-d);
+  }
+  100% {
+    font-family: var(--font-cycled-d);
+  }
+}

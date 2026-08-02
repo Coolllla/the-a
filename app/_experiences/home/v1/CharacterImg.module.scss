@@ -8,6 +8,8 @@
   z-index: var(--z, 1);
   position: absolute;
   inset: 0;
+
+  transition: opacity 0.2 ease-in-out;
   // overflow: hidden;
   &[data-character="pearuth"] {
     left: auto;
@@ -26,6 +28,13 @@
       transform: translateY(5%);
       clip-path: polygon(15% 0, 85% 0, 85% 100%, 15% 100%);
     }
+  }
+
+  &[data-dimmed] {
+    opacity: 0.45;
+    filter: blur(4px);
+    will-change: filter opacity;
+    pointer-events: none;
   }
   // &[data-character="worl"] {
   //   left: -10%;

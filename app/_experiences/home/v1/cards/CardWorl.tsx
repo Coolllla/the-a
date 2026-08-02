@@ -27,7 +27,7 @@ const CLIP = {
 const WIPE = 0.24,
   HOLD = 0.3;
 const TOTAL = WIPE * 2 + HOLD;
-const EASE = [0.4, 0, 0.2, 1];
+const EASE: Easing = [0.4, 0, 0.2, 1];
 const SPEED = 45,
   DELAYS = [400, 3200];
 const endOf = (i: number) => DELAYS[i] + text[i].length * SPEED;

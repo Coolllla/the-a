@@ -10,6 +10,7 @@ type Props = {
   Fit?: string;
   onImgLoad?: (name: string, img: HTMLImageElement) => void;
   debugRect?: DrawRect | null;
+  dimmed?: boolean;
 };
 
 function CharacterImg({
@@ -20,11 +21,13 @@ function CharacterImg({
   Fit = "contain",
   onImgLoad,
   debugRect,
+  dimmed,
 }: Props) {
   return (
     <div
       ref={ref}
       data-character={name}
+      data-dimmed={dimmed || undefined}
       className={styles.slot}
       style={{ "--z": zIndex } as React.CSSProperties}
     >
