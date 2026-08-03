@@ -1,9 +1,9 @@
-import CardWorl from "@/app/_experiences/home/v1/cards/CardWorl";
+import CardBearu from "@/app/_experiences/home/v1/cards/CardBearu";
 
 function page() {
   return (
     <div>
-      <CardWorl />
+      <CardBearu />
     </div>
   );
 }

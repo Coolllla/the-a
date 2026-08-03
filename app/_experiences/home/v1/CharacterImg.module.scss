@@ -9,7 +9,7 @@
   position: absolute;
   inset: 0;
 
-  transition: opacity 0.2 ease-in-out;
+  transition: opacity 0.2s ease-in-out;
   // overflow: hidden;
   &[data-character="pearuth"] {
     left: auto;
@@ -33,7 +33,7 @@
   &[data-dimmed] {
     opacity: 0.45;
     filter: blur(4px);
-    will-change: filter opacity;
+    will-change: filter, opacity;
     pointer-events: none;
   }
   // &[data-character="worl"] {

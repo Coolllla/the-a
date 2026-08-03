@@ -1,3 +1,5 @@
+import localFont from "next/font/local";
+
 import {
   Geist,
   Geist_Mono,
@@ -5,6 +7,13 @@ import {
   Open_Sans,
   Noto_Serif_SC,
 } from "next/font/google";
+
+export const pixelFont = localFont({
+  src: "./_assets/fonts/HYPixel11pxU-2.woff2",
+  variable: "--font-hy-pixel",
+  weight: "400",
+  adjustFontFallback: false,
+});
 
 export const geistSans = Geist({
   variable: "--font-geist-sans",

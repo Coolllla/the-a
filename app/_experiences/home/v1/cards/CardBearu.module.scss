@@ -1,0 +1,14 @@
+.card {
+  position: absolute;
+  height: min(85vh, 132rem);
+  width: auto;
+  overflow: hidden;
+  container-type: inline-size;
+  aspect-ratio: 1418 / 2648;
+}
+
+.base {
+  display: block;
+  width: 100%;
+  height: auto;
+}

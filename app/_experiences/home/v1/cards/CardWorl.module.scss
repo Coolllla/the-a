@@ -2,6 +2,7 @@
   position: relative;
   width: min(120rem, 80vw, 98vh);
   overflow: hidden;
+  container-type: inline-size;
 }
 
 .base {
@@ -26,7 +27,7 @@
   display: block;
   position: absolute;
   font-weight: 700;
-  font-size: 1.2rem;
+  font-size: 1cqw;
   line-height: 1.1;
   color: #2c6bae;
   width: 100%;
