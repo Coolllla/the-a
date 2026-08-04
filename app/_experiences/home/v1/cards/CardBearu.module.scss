@@ -1,8 +1,9 @@
 .card {
-  position: absolute;
+  position: relative;
+  translate: -12rem 0;
   height: min(85vh, 132rem);
   width: auto;
-  // overflow: hidden;
+  overflow: hidden;
   container-type: inline-size;
   aspect-ratio: 1418 / 2648;
 }
@@ -13,32 +14,191 @@
   height: auto;
 }
 
+$iconColor: #9c9c9c;
 .flowerCross {
   position: absolute;
   display: block;
-  width: 5%;
+  width: 100%;
+  top: 10.8%;
+  left: 83%;
+  opacity: 1;
+  cursor: pointer;
+  // background-color: red;
+
+  transition: filter 2s cubic-bezier(0.075, 0.82, 0.165, 1) 0s,
+    opacity 3s ease-in-out 0.5s;
+  // transition: opacity 4s ease-in-out 0.5s;
+  &:hover {
+    opacity: 0;
+    filter: blur(3px);
+  }
+}
+
+.cross {
+  width: 2.68%;
   height: auto;
-  top: 9%;
-  left: 80%;
+}
+
+.flower {
+  margin-top: 2cqw;
+  margin-left: -1cqw;
+  width: 5.078%;
+  height: auto;
 }
 
 .nameArt {
   position: absolute;
   display: block;
+  width: 100%;
   top: 35%;
   left: -10%;
+  // opacity: 0.5;
   img {
-    width: 35%;
+    width: 33.152%;
     height: auto;
+    position: absolute;
   }
+}
+
+.picRed {
+  margin-top: 0.3rem;
+}
+.picBlue {
+  margin-top: -0.3rem;
+}
+
+.desc {
+  position: absolute;
+  writing-mode: vertical-rl;
+  font-size: 3cqw;
+  font-weight: 400;
+  height: 100%;
+  top: 15%;
+  left: 79%;
+  color: $iconColor;
+  font-family: var(--font-roxboroughCF), var(--font-noto-serif-sc);
+  opacity: 1;
+  transition: filter 2s cubic-bezier(0.075, 0.82, 0.165, 1) 0.7s,
+    opacity 3s ease-in-out 1.2s;
+  &[data-icon="flower"] {
+    letter-spacing: 0;
+  }
+
+  &[data-icon="cross"] {
+    letter-spacing: 0px;
+  }
+}
+
+.flowerCross:hover ~ .desc {
+  opacity: 0;
+  filter: blur(3px);
+}
+
+.text {
+  position: absolute;
+  white-space: pre-line;
+  font-size: 4cqw;
+  font-family: var(--font-hy-pixel);
+}
+
+.text1 {
+  padding: 0.2rem;
+  line-height: 1;
+  text-align: right;
+  left: 33%;
+  top: 52%;
+  backdrop-filter: blur(4px);
+  border-radius: 5px;
+  border-top: 1px solid #eee;
+  // border-left: 1px solid #eee;
+}
+
+.card[data-glitch="on"] .text1 {
+  animation: glitch 0.36s steps(1, end);
 }
 
 .bottomStaff {
   position: absolute;
   display: block;
+  width: 100%;
+  height: 13%;
+  top: 84%;
+  left: 8%;
+  // background-color: red;
 }
 
-.icon {
+.more {
   position: absolute;
+  display: flex;
+  width: 100%;
+  height: auto;
+  bottom: 4%;
+  left: 60%;
+  gap: 1rem;
+  align-items: center;
+}
+.icon {
   display: block;
+  height: 4cqw;
+  width: 5cqw;
+
+  animation: float 1s step-end infinite;
+}
+
+.text2 {
+  line-height: 1.2;
+  width: 80%;
+}
+
+.text3 {
+  position: relative;
+  color: $iconColor;
+  text-decoration: underline;
+}
+
+.glitchImage {
+  position: absolute;
+  width: 53.173%;
+  height: auto;
+  top: 55.5%;
+  left: 32%;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(15%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes glitch {
+  0% {
+    transform: translateX(0);
+    clip-path: inset(0 0 0 0);
+  }
+  20% {
+    transform: translateX(-1.2%);
+    clip-path: inset(20% 0 55% 0);
+  }
+  40% {
+    transform: translateX(0.8%);
+    clip-path: inset(60% 0 15% 0);
+  }
+  60% {
+    transform: translateX(-0.4%);
+    clip-path: inset(35% 0 40% 0);
+  }
+  80% {
+    transform: translateX(0);
+    clip-path: inset(0 0 0 0);
+  }
+  100% {
+    transform: translateX(0);
+    clip-path: inset(0 0 0 0);
+  }
 }

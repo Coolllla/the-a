@@ -41,9 +41,23 @@ import linShen from "@/app/_assets/characters/lin-shen.png";
 **默认偏好 import 方式**；只有以下情况用 `public/`：
 
 - 需要稳定 URL（favicon、OG、sitemap、robots.txt）；
-- 字体文件（CSS `@font-face` 引用）；
 - MDX 章节插图（写作时手填路径，不应每张图都 `import`）；
 - 大体积媒体（视频、4K 原图）。
+
+### 字体是例外：跟着 `next/font/local` 走，不进 `public/`
+
+自部署字体**放 `app/_assets/fonts/`**，由 [`app/fonts.ts`](../../app/fonts.ts) 用相对路径引用：
+
+```ts
+export const pixelFont = localFont({
+  src: "./_assets/fonts/HYPixel11pxU-2.woff2",   // 相对 fonts.ts 解析，不是 URL
+  variable: "--font-hy-pixel",
+});
+```
+
+原因是 `next/font/local` 的 `src` 只吃**构建期能解析的相对路径**，不吃 `/fonts/x.woff2` 这种公共 URL —— 把字体放 `public/` 就用不上 next/font，得倒退回手写 `@font-face`，同时丢掉它自动做的 preload、`font-display: swap`、hash 文件名与 CLS 补偿。所以这里不是"偏好"问题，是 API 约束。
+
+只有一种情况字体才需要进 `public/`：某段 CSS 必须手写 `@font-face`（目前项目里没有）。
 
 ---
 
@@ -63,8 +77,9 @@ import linShen from "@/app/_assets/characters/lin-shen.png";
 | 资产性质 | 归属层 | 位置 |
 |---|---|---|
 | 角色立绘 / 世界地图 / 章节插图 / 画作 | **数据层**（跨版本共享）| `app/_assets/` |
+| 字体 | **数据层**（跨版本共享，但受 next/font API 约束）| `app/_assets/fonts/` |
 | v1 的纸张纹理 / 墨迹 / 手绘边框装饰 | **体验层**（专属版本，co-location）| `app/_experiences/home/v1/assets/` |
-| favicon / OG / 字体 / MDX 章节图 / 大体积媒体 | **基础资源**（稳定 URL）| `public/` |
+| favicon / OG / MDX 章节图 / 大体积媒体 | **基础资源**（稳定 URL）| `public/` |
 
 ### 判断"该放哪"的标准问句
 
@@ -79,6 +94,7 @@ import linShen from "@/app/_assets/characters/lin-shen.png";
 ```
 app/
 ├── _assets/                          # ⭐ 跨版本共享的内容资产（数据层）
+│   ├── fonts/                        # 自部署字体（next/font/local 的 src 指这里）
 │   ├── characters/                   # 角色立绘
 │   ├── world/                        # 世界观相关（地图、场景、势力徽章）
 │   ├── factions/                     # 势力徽记
@@ -89,17 +105,17 @@ app/
     │   └── v1/
     │       ├── HomeV1.tsx
     │       ├── HomeV1.module.scss
-    │       └── assets/               # ⭐ v1 专属皮肤资产（体验层）
-    │           ├── paper-texture.jpg
-    │           ├── ink-splatter.png
-    │           └── frame-doodle.svg
+    │       ├── assets/               # ⭐ v1 专属皮肤资产（体验层）
+    │       │   ├── paper-texture.jpg
+    │       │   ├── ink-splatter.png
+    │       │   └── frame-doodle.svg
+    │       └── cards/assets/         # 再往下细分也可以，就近原则优先于层级整齐
     └── ... 其他可版本化页面同样的 assets/ 子目录约定
 
 public/
 ├── favicon.ico
 ├── favicon-32.png
 ├── og.png                            # 社交分享卡
-├── fonts/                            # 自部署字体
 ├── chapters/                         # MDX 章节内嵌插图
 │   └── 01-mist/                      # 目录名 = 章节 slug，与 URL /chapters/01-mist 一致
 │       └── pier.jpg                  # MDX 中：![](/chapters/01-mist/pier.jpg)
@@ -205,10 +221,23 @@ export function ThreeFrameLoop({ active = true, fps = 6 }) {
 
 控制点全部外置：`active` 决定播不播，`fps` 控制速度，可以再扩展 `direction`（正/反）、`oneShot`（一次性）等。
 
+### ⚠️ 序列帧不要用「切 `src`」实现（尤其别在 `next/image` 上切）
+
+上面那个参考用的是原生 `<img>` + `FRAMES[i].src`，那样是对的。但**换成 `next/image` 之后同样的思路会静默失效**，2026-08-05 在 bearu 名片的 glitch 帧上实测撞到，三重原因叠着，每一层单独都足以让它不动：
+
+1. **写字符串路径必 404**。`"./assets/card-bearu-asset1.png"` 是打包器的模块路径，不是运行时 URL；浏览器会拿它去拼当前页面地址。只有 `public/` 下的文件有公共 URL，`app/` 里的资产只能靠 `import` 拿到那个 hash 化的 `/_next/static/media/...`。
+2. **`next/image` 会生成 `srcset`，而 `src` 按 HTML 规范只是 `srcset` 不可用时的兜底**。srcset 里已经有 `1x` 候选，所以改 `src` 浏览器根本不看。
+3. **`src` 写在 JSX 里就归 React 管**。用 GSAP 的 `attr: { src }` 改完，下一次任何重渲染（比如点了个按钮切状态）都会把它按 JSX 的声明改回去。
+
+**该怎么写**：把所有帧一次性全渲染、叠在同一位置，然后切**可见性**（GSAP 的 `autoAlpha` / CSS class / React state 都行）。多出的代价只是几个 `<img>` 节点和一次预加载 —— 换来的是帧不会闪白（图早就解码好了）、时间轴能随便倒着 scrub、且资产走正常 `import` 有编译期保护。
+
+> 更一般的规律：**一个元素的一个属性只能有一个主人**。React 声明的 `src` 就别让动画库去写。见 [`tech-stack.md §3.5`](./tech-stack.md)。
+
 ---
 
 ## 八、决策变更日志
 
+- **2026-08-05**：**更正字体存放位置**。此前本文档把字体列进 `public/`（依据是"CSS `@font-face` 引用"），但项目实际用 `next/font/local`，其 `src` 只吃构建期相对路径、不吃公共 URL —— 代码里字体一直在 `app/_assets/fonts/`，文档写错了。裁定**以代码为准**，§二 / §四 已对齐，并补一节说明为什么这是 API 约束而非偏好。（遗留：`public/HYPixel11pxU-2.ttf` 是这条错误留下的孤儿文件，真正在用的是 `app/_assets/fonts/` 里的 `.woff2` 版本。）同时在 §七 补一条实测坑：序列帧动画不要用「切 `src`」实现，`next/image` 上会因为 srcset + React 声明所有权而静默失效，改为「全渲染 + 切可见性」。
 - **2026-07-27**：统一章节 slug 形状。此前本文档示例用 `public/chapters/ch-01-mist/`，而 [`architecture.md`](./architecture.md) 的 URL 示例是 `/chapters/01-mist`，两者不一致。裁定**以 architecture.md 的 URL 形状为准**（`<序号>-<描述词>`，不加 `ch-` 前缀），本文档示例已对齐，并明确"插图目录名 = 章节 slug"。
 - **2026-06-16**：新增"动图 / 序列帧动画"章节。明确不使用 GIF（256 色 + 1 位透明的硬伤），装饰性自动循环用 APNG / 动图 WebP，需交互控制用序列帧 + JS。
 - **2026-06-09**：初版定稿。确定 import 静态导入为默认偏好，资产按"体验层 vs 数据层"分离，v1 专属资产 co-location 于 `_experiences/home/v1/assets/`，MDX 章节图走 `public/chapters/`，全小写短横线命名。

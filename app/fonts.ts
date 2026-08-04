@@ -9,6 +9,12 @@ import {
   Covered_By_Your_Grace,
 } from "next/font/google";
 
+export const roxboroughCFLight = localFont({
+  src: "./_assets/fonts/RoxboroughCF-Light.otf",
+  variable: "--font-roxboroughCF",
+  weight: "400",
+});
+
 export const coverByYourGrace = Covered_By_Your_Grace({
   variable: "--font-covered-by-your-grace",
   subsets: ["latin"],

@@ -1,6 +1,6 @@
 .card {
   position: relative;
-  width: min(120rem, 80vw, 98vh);
+  width: min(120rem, 60vw, 98vh);
   overflow: hidden;
   container-type: inline-size;
 }
@@ -27,7 +27,7 @@
   display: block;
   position: absolute;
   font-weight: 700;
-  font-size: 1cqw;
+  font-size: 1.4cqw;
   line-height: 1.1;
   color: #2c6bae;
   width: 100%;

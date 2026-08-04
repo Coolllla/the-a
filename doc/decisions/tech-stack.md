@@ -145,6 +145,32 @@
 - 仅允许 CSS 级微动效（淡入、悬浮）；
 - 必须尊重 `@media (prefers-reduced-motion: reduce)`，给前庭敏感用户提供降级体验。
 
+#### 追加（2026-08-05）：分工判据从"元素身份"改成"要不要编排"
+
+上表按「UI 级 / 场景级」划分，实际用起来会卡住：bearu 名片是个**弹窗里的组件**（照上表归 Motion），但它的入场要让 4 组共 8 个节点按相对时间先后出场，用 Motion 就得到处手填 `delay`，改一个数下游全要重算。所以判据修正为：
+
+| 问题 | 选谁 |
+|---|---|
+| 要编排**多个元素的相对时间**，或想在开发时**拖时间轴调参**（scrub / 变速 / 反复重播） | **GSAP timeline** |
+| 单个元素的**状态间过渡**，尤其需要 **exit 动画**（元素要卸载但得先播完） | **Motion** |
+| 一次性的淡入 / 循环 / hover | **CSS** |
+
+推论：**同一个组件里两个库并存是正常的，边界划在元素上而不是组件上。** `CardBearu` 就是活例 —— 入场编排走 GSAP timeline（`BuildBearuIntro.ts`），而 flower↔cross 切换时那段文字的淡入淡出走 Motion 的 `AnimatePresence mode="wait"`（要 exit，GSAP 做不到"先播完再卸载"）。
+
+> 顺带更正 [`logs/2026-07-31-cardshell.md`](../logs/2026-07-31-cardshell.md) 末尾那句「名片不是 timeline 演出，与幕机制无关」—— 名片**可以**是，bearu 卡就是本项目的第一幕。当时那句只对当时的 worl 卡成立。
+
+#### 跨库红线：一个元素的一个属性只能有一个主人
+
+这条是硬不变量，违反了必出难查的 bug，而且它跨 GSAP / Motion / React / CSS 四方。已经撞到三次：
+
+| 争的属性 | 两个主人 | 症状 |
+|---|---|---|
+| `transform` | Motion 的 `animate={{x}}` vs GSAP 的 `quickTo` | 入场位移和鼠标视差互相抹掉（见 7-31 log §7，解法是嵌套两层各管一层） |
+| `opacity` | Motion 的 `AnimatePresence` vs GSAP 的 `autoAlpha` | 谁最后写谁赢，表现为动画随机丢一半 |
+| `src` | React 的 JSX 声明 vs GSAP 的 `attr` | 改了看不见，且任何重渲染都把它改回去（见 [`asset-organization.md §七`](./asset-organization.md)） |
+
+遇到冲突不要靠"排好顺序"绕过去 —— 顺序在 HMR、reduced-motion 分支、异步插件加载下都会变。正确做法是**拆**：多包一层 DOM 各管一个属性，或换一个不争的属性（切 `src` → 切可见性）。
+
 ### 3.6 3D：暂不引入
 
 **结论**：项目当前及可预见阶段不使用 Three.js / React Three Fiber。
@@ -260,5 +286,6 @@
 
 记录技术选型的重大调整。格式：`YYYY-MM-DD：变更内容（原因）`。
 
+- **2026-08-05**：**§3.5 双库分工的判据细化**（不改原表，追加两节）。原表按「UI 级 vs 场景级」分，在 bearu 名片上卡住 —— 它是 UI 级弹窗组件，但入场要编排 4 组共 8 个节点的相对时间。判据改为按「要不要编排多元素相对时间 / 要不要拖时间轴调参」选 GSAP，按「要不要 exit 动画」选 Motion，**同组件内两库并存正常，边界在元素上**。同时把「一个元素的一个属性只能有一个主人」立为跨库红线（`transform` / `opacity` / `src` 三次实证）。本项目第一幕 GSAP timeline 同日落地（`BuildBearuIntro.ts`），见 [`notes/7.29-动画编排方案.md`](../notes/7.29-动画编排方案.md) §三。
 - **2026-07-02**：`gsap` + `@gsap/react` 落地首页 v1（`useParallax` 用 `gsap.quickTo` 做鼠标视差）；同期 Motion 落地首个实际用例——`AnimatePresence` 处理 `NameCard` 悬停显隐的进出场动画，`useMotionValue` + `useSpring` 驱动名字卡跟随鼠标位移。验证了"场景级 GSAP / UI 级 Motion"的分工判断。共享工具位置确定为 `app/_lib/`（`hitTest.ts` / `useAlphaMap.ts`），架构层面的 `app/_xxx/` 前缀约定同步落到 [`architecture.md`](./architecture.md)。
 - **2026-06-09**：初版定稿。确定 SCSS + CSS Modules / Radix UI / GSAP + Motion / 暂不 3D / 暂不 monorepo / VPS + Docker 部署的整体路线。

@@ -17,6 +17,7 @@ import {
 } from "motion/react";
 import CardShell from "./cards/CardShell";
 import CardWorl from "./cards/CardWorl";
+import CardBearu from "./cards/CardBearu";
 
 // hit box 调试开关：开发时改成 true 看红框对不对，验完记得关掉
 const DEBUG_HITBOX = false;
@@ -188,6 +189,7 @@ export default function HomeV1() {
           onClose={() => setSelected(null)}
         >
           {selected === "worl" && <CardWorl />}
+          {selected === "bearu" && <CardBearu />}
         </CardShell>
       </div>
     </main>

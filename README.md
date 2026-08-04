@@ -6,7 +6,12 @@
 
 ## 当前状态
 
-早期开发中。已完成首页 v1(视差交互)与全站导航;藏书阁 `/library` 正在搭**横向时间轴**(轴线钉在视口、节点层横向滚,节点组件与真实数据都还在打磨,页面上跑的是临时演示数据,见 [`doc/logs/2026-07-27-library-skeleton.md`](doc/logs/2026-07-27-library-skeleton.md));**内容管道(MDX)尚未集成**,阅读区的页面还未实现。
+早期开发中。已完成:
+
+- **首页 v1** —— 视差交互 + 立绘的 alpha 位图命中检测(点中人物本体而非矩形框),以及**角色名片系统**:点角色滑出一张"夹进日记的印刷品"式卡片,其余角色虚化。四张主角卡里 worl / bearu 两张已做完,bearu 的入场是项目第一幕 GSAP timeline(见 [`doc/notes/7.29-动画编排方案.md`](doc/notes/7.29-动画编排方案.md))。
+- **全站导航** —— 按路由分组切换深/浅两种姿态。
+
+进行中 / 未开始:藏书阁 `/library` 正在搭**横向时间轴**(轴线钉在视口、节点层横向滚,节点组件与真实数据都还在打磨,页面上跑的是临时演示数据,见 [`doc/logs/2026-07-27-library-skeleton.md`](doc/logs/2026-07-27-library-skeleton.md));**内容管道(MDX)尚未集成**,阅读区的页面还未实现。
 
 ## 快速开始
 
@@ -32,9 +37,10 @@ app/
 ├── _shell/                 # 外壳层实现(Nav)
 ├── _experiences/           # 版本化体验层(见下)
 ├── _lib/                   # 无 UI 的工具与 hook
-└── ⏳ _data/ _types/ _assets/ _components/ (reading)/   # 已规划,尚未创建
+├── _assets/                # 跨版本共享的内容资产(目前只有 fonts/,见资产约定)
+└── ⏳ _data/ _types/ _components/ (reading)/   # 已规划,尚未创建
 doc/                        # 决策记录、笔记、会话日志(不参与构建)
-public/                     # 稳定 URL 资源(favicon、字体、章节插图、大体积媒体)
+public/                     # 稳定 URL 资源(favicon、章节插图、大体积媒体)
 ```
 
 ### 版本化体验层

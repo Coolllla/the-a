@@ -7,6 +7,7 @@ import {
   notoSerifSc,
   pixelFont,
   coverByYourGrace,
+  roxboroughCFLight,
 } from "./fonts";
 import "./globals.scss";
 
@@ -23,6 +24,7 @@ const fonts = [
   notoSerifSc,
   pixelFont,
   coverByYourGrace,
+  roxboroughCFLight,
 ];
 
 const fontVariables = fonts.map((font) => font.variable).join(" ");
