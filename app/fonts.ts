@@ -6,7 +6,14 @@ import {
   Caveat,
   Open_Sans,
   Noto_Serif_SC,
+  Covered_By_Your_Grace,
 } from "next/font/google";
+
+export const coverByYourGrace = Covered_By_Your_Grace({
+  variable: "--font-covered-by-your-grace",
+  subsets: ["latin"],
+  weight: "400",
+});
 
 export const pixelFont = localFont({
   src: "./_assets/fonts/HYPixel11pxU-2.woff2",

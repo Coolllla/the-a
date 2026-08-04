@@ -266,6 +266,95 @@ AI 当时给的草案分段（**未采纳，仅备参考**，实际要按用户�
 
 上面那些**决策**（时间轴双视图、立绘随时代更替、番外单一聚合节点、时间精度必须可表达、开屏最后做）依然有效——它们是设计结论，不依赖那批文件存在。
 
+### 十二、节点（`Chapter`）的第一版视觉（2026-08-04 追加）
+
+用户搭好 `Chapter.tsx` 空壳后点名要"按你自己的审美用 SVG 做一版参考"，于是这一版视觉是 AI 定的，**属于参考稿，数值全部可改**。
+
+形态：轴上一个**手绘感的圈**（收笔处刻意留 0.7° 左右的缺口，不闭合），圈顶牵一根**略带起伏的引线**到一根短横（"搁板"），标签压在搁板上；标题在上、日期在下。
+
+四条实现要点：
+
+- **文字不进 SVG**。`<text>` 没有文本流，中文标题一长要手拆 `<tspan>`；标题/日期走 DOM，顺带白拿 `<a>`、tab 顺序、`:focus-visible`
+- **圈心画在 viewBox 下边缘**（`cy=48`，viewBox `0 0 24 48`），靠 `overflow: visible` 露出下半圈。这样容器只要 `translateY(-100%)` 就能让圈心精准落在轴线上，不用去凑 magic offset。支线（轴下方）只需 `transform: scaleY(-1)`——绕自身中心翻转正好把圈心送到上边缘，引线自动朝下
+- 节点纵向锚点写成 `$axis-center: 2rem`，等于 `Timeline.module.scss` 里 `.axis` 高度 4rem 的一半。**改轴高度要同步改这个值**
+- hover / `:focus-visible` 三件事同时发生：圈内点亮墨点（`.pip`，静态 `opacity: 0`）、标题被荧光笔刷过、引线加深。荧光笔沿用 Nav `.active` 的 `--highlight-yellow` 语言
+
+两个当时踩到的坑：
+
+- `.mark { path, circle { fill: none } }` 的特异性（`.mark circle` = 0,1,1）**高于** `.pip { fill: ... }`（0,1,0），墨点永远画不出来。改成只给 `path` 写 `fill: none`
+- 荧光笔本想只刷文字下沿（`background-size: 100% 0.7em`），但标题换行后 inline box 的 background 只落在第二行。改成刷满整行高度（`0 0 / 100% 100%`）；标题保证单行时可以改回下沿版
+
+`side`（支线，挂轴下方、整体收一号）与 `approx`（时间不确定 → 圈与引线转虚线、日期前缀"约"）是两个 boolean prop；`offset`（0~1）驱动 `left`，跟决策十一"一份 positions 同时驱动轴与节点"对齐。
+
+### 十三、横向滚动的第一次实测（2026-08-04 追加）
+
+用 16 条演示数据把轨道拉到比视口宽，验证决策十一选的 A 方案（轴线不动、节点层滑过）。
+
+**结构**（三层，纯 CSS，没有 JS）：
+
+```
+.stage   position: absolute; top: 50%          ← 已有
+  .axis  width: 100%                           ← 已有，钉在视口不动
+  .rail  overflow-x: auto; height: 32rem       ← 新增，节点层，盖在轴线上
+    .track  width: 条目数 × 间距               ← 新增，轨道总长在这里
+      Chapter × N   left: offset × 100%
+```
+
+原生 `overflow-x: auto` 就能滑（触控板横向、shift + 滚轮、拖滚动条），先不写 JS；将来接 GSAP 只是把这一层的滚动换成受控位移。
+
+三条踩到的约束：
+
+- **`overflow-y` 没法留 `visible`** —— 一旦设了 `overflow-x: auto`，`visible` 会被算成 `auto`，节点必须待在 `.rail` 的高度内。所以 `.rail` 上下各留一半（`$rail-height: 32rem` / `$axis-y: 16rem`），`.rail` 再上移 `calc(2rem - 16rem)` 把自己的轴位对回轴线
+- 因此节点的纵向锚点从写死的 `2rem` 改成 `var(--axis-y, 2rem)`，由 `.track` 给值。默认值保留 2rem，节点直接挂在 `.stage` 里也照样能用
+- 节点层要自己加两端 `mask-image` 淡出，否则节点会在视口边缘硬生生出现/消失，跟轴线的淡入端对不上。注意 mask 只管视觉，**淡到几乎看不见的节点仍然可点**
+
+**最有价值的发现：按真实日期线性映射，密度必然不均。** 前期事件密集处节点挤成一堆，跨好几年的地方一屏只有一两个节点、大段空白（实测 2026–2028 段一屏 2 个节点）。所以 `Timeline.tsx` 里留了 `LAYOUT: "time" | "even"` 开关：
+
+- `"time"` 时间尺度准确，代价是密度失控
+- `"even"` 每条等间距（`offset = (i + 0.5) / n`），翻起来舒服，代价是时间尺度失真；轨道总长 = 条目数 × 间距，正是决策十一说的派生值
+
+这是个**内容问题不是布局问题**：真要两全，得引入"压缩空白区间"（长空档折叠成一小段，画个断口记号）或者分纪元切段。留给数据层定型时再决定。
+
+### 十四、轨道的三个空档 + 滚轮劫持（2026-08-04 追加）
+
+**轨道左端留半屏空档给主角团立绘。** 轨道总长因此拆成三段：
+
+```
+width: calc(var(--lead-in) + var(--span-w) + var(--tail-out))
+        留给立绘（30vw）  节点分布宽    末节点不贴边（24vw）
+```
+
+节点的 `left` 也跟着改：不再是 `offset × 100%`，而是
+`calc(var(--lead-in, 0px) + var(--offset) × var(--span-w, 100%))`。
+`--offset`（0~1）由组件写在 inline style 上，另两个由 `.track` 给；**两个 fallback 保证节点单独挂在 `.stage` 里时行为不变**（退回 offset × 容器宽）。
+
+> 为什么不能用 `padding-left` 留空档：绝对定位子元素的 `left: X%` 是相对**父元素的 padding box**算的，加 padding 不会把节点推走。必须算进 `left` 本身。
+
+**竖向滚轮 → 横向滑轨道**（用户要求），纯 CSS 做不到，`Timeline` 因此变成 `"use client"`（反正后面接 GSAP 也要变）。`wheel` 监听三条边界：
+
+- `Math.abs(deltaY) <= Math.abs(deltaX)` 时不接管 —— 触控板的横向手势交给原生，带惯性，比手写的跟手
+- 滚到轨道两端时不接管，把滚动还给页面（现在页面没有竖向内容，但将来会有）
+- 必须 `addEventListener("wheel", fn, { passive: false })`，否则 `preventDefault()` 无效
+
+用 CDP `Input.dispatchMouseEvent` 实测过：竖滚 6 格 → `scrollLeft` 0 → 2400，反向一格回 2000，一直滚到底停在 `max`（6538）不溢出。
+
+滚动条按要求隐藏（`scrollbar-width: none` + `::-webkit-scrollbar { display: none }`）——**所以现在鼠标用户只能靠滚轮，没有可拖的东西**，将来若要给出"还能往右"的提示，得自己画（末端箭头、进度条、或轴上的刻度）。
+
+**一个藏起来的耦合**：`.rail` 的 `mask-image` 左侧透明区（现在 `transparent 20vw → #000 calc(20vw + 6rem)`，用来让立绘区不显示节点）**必须小于 `$lead-in`（现在 30vw）**，否则第一个节点会落在遮罩里、看着像没渲染出来。调这两个值时要一起调。
+
+### 十五、两个节点组件并存，别搞混（2026-08-04）
+
+`v1/` 下现在有**两个**节点组件，`Timeline` 用的是前者：
+
+| 文件 | 谁写的 | 定位 |
+|---|---|---|
+| `Chapter.tsx` + `.module.scss` | AI（用户点名要的参考稿） | 圈 + 引线 + 搁板那一版，含 `side` / `approx` 两种形态与 hover 荧光笔。视觉数值全部可改 |
+| `MeChapter.tsx` + `.module.scss` | 用户，在写 | 用户自己的形态：大号年份（`--font-covered-by-your-grace` + 荧光底）+ 标题 + 描述 |
+
+演示数据也从 `Timeline.tsx` 抽到了 `v1/data.ts`。**接手时先确认 `Timeline` 里 import 的是哪一个**——`Chapter` 只是参考稿，用户的版本成型后大概会替掉它。
+
+顺手记一条通用坑（不只藏书阁）：`<Link>` 的下划线取消不掉，多半是把 `text-decoration: none` 写在了 `<a>` 的子元素上，而本项目 `globals.scss` 里**没有 `a` 的全局 reset**。详见 [`notes/8.4-Link下划线与全局reset.md`](../notes/8.4-Link下划线与全局reset.md)。
+
 ---
 
 ## 附录：已删除的类型与占位数据（仅存档）

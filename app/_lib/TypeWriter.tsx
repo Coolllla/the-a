@@ -32,7 +32,7 @@ export function TypeWriter({
     const start = setTimeout(function tick() {
       i++;
       setLen(i);
-      if (i < text.length) timer = setTimeout(tick, speed);
+      if (i < text.length) timer = window.setTimeout(tick, speed);
     }, delay);
     return () => {
       clearTimeout(start);

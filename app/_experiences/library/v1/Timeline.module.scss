@@ -1,19 +1,74 @@
 .stage {
-    position: absolute;
-    width: 100%;
-    top: 50%;
-    left: 0;
+  position: absolute;
+  width: 100%;
+  top: 50%;
+  left: 0;
 }
 
+// 节点分布占的宽度（不含两头留白）。
+// "even" 排法下由 Timeline.tsx 用 --span-w 传进来（条目数 × 间距，真正的派生值）；
+// 下面这个只是 "time" 排法的兜底倍数。
+$span-width: 480vw;
+// 第一个节点前面的空档 —— 留给主角团立绘。轨道起点到这里为止是空的。
+$lead-in: 30vw;
+// 最后一个节点后面的空档，免得末节点贴着视口右缘
+$tail-out: 24vw;
+// 节点层的高度，以及轴线在这一层里的纵向位置（上下各留一半给挂上去的节点）。
+$rail-height: 32rem;
+$axis-y: 16rem;
+
 .axis {
-    display: block;
-    width: 100%;
-    height: 4rem;
-    mask-image: linear-gradient(to right,transparent 2%,#000 8%, #000 92%,transparent 98%);
-    path {
-        fill: none;
-        stroke: var(--text-ink);
-        stroke-width: 1;
-        stroke-linecap: round;
-    }
+  display: block;
+  width: 100%;
+  height: 4rem;
+  mask-image: linear-gradient(to right, transparent 2%, #000 8%);
+  // mask-image: linear-gradient(to right,transparent 2%,#000 8%, #000 92%,transparent 98%);
+  path {
+    fill: none;
+    stroke: var(--text-ink);
+    stroke-width: 1;
+    stroke-linecap: round;
+  }
+}
+
+// 节点层：盖在轴线上、可横向滚的一条。轴线不动，只有这一层滑过去。
+.rail {
+  position: absolute;
+  left: 0;
+  // 把这一层的中线对到轴线上（轴线在 .stage 里的 y = .axis 高度的一半 = 2rem）
+  top: calc(2rem - #{$axis-y});
+  width: 100%;
+  height: $rail-height;
+  overflow-x: auto;
+  // 注意：overflow-y 没法留 visible（会被算成 auto），所以节点必须待在 $rail-height 内
+  overscroll-behavior-x: contain;
+  // 两端淡出，跟轴线的 mask 呼应；否则节点会在视口边缘硬生生出现
+  mask-image: linear-gradient(
+    to right,
+    transparent 20vw,
+    #000 calc(20vw + 6rem),
+    #000 calc(100% - 6rem),
+    transparent 100%
+  );
+
+  // 滚动条藏掉（横向滚动由 Timeline.tsx 里的 wheel 接管）
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.track {
+  position: relative;
+  width: calc(var(--lead-in) + var(--span-w) + var(--tail-out));
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  // 下面三个值节点自己会读：--axis-y 定纵向，--lead-in / --span-w 定横向
+  --axis-y: #{$axis-y};
+  --lead-in: #{$lead-in};
+  --tail-out: #{$tail-out};
+  --span-w: #{$span-width}; // "even" 排法下被 Timeline.tsx 的 inline style 覆盖
 }

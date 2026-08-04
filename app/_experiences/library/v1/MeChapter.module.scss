@@ -1,0 +1,35 @@
+.link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.container {
+  display: flex;
+  gap: 5rem;
+  // justify-content: start;
+  // align-items: start;
+}
+
+.date {
+  color: var(--text-ink);
+}
+
+.year {
+  position: relative;
+  font-size: 4rem;
+  font-family: var(--font-covered-by-your-grace);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--bg-paper);
+  background-color: var(--highlight-yellow-darker);
+  padding: 0.2rem 1.2rem;
+}
+
+.month {
+  margin-top: -2rem;
+}
+
+.title {
+}
+.des {
+}

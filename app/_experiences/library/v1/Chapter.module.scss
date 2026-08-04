@@ -1,0 +1,177 @@
+// 时间轴节点。
+// 数值都是我拍的参考值，随便改：圈的粗细、字号、动效时长都在这一份里。
+
+// 圈心要落在轴线上，纵向锚点由父层用 --axis-y 给（Timeline 的 .track 里设）。
+// 没给的话退回 2rem —— 即 .axis 高度 4rem 的一半，节点直接挂在 .stage 里时的位置。
+// 横向位置：--offset（0~1）由组件写在 inline style 上，
+// --lead-in / --span-w 由父层（Timeline 的 .track）给。
+// 两个都没给时退回 offset × 容器宽，节点直接挂在 .stage 里也能用。
+.node {
+  position: absolute;
+  top: var(--axis-y, 2rem);
+  left: calc(var(--lead-in, 0px) + var(--offset) * var(--span-w, 100%));
+  display: flex;
+  flex-direction: column-reverse; // 记号在下、标签在上
+  align-items: center;
+  gap: 0.2rem;
+  width: max-content;
+  max-width: 16rem;
+  text-decoration: none;
+  // 水平居中 + 把圈心压到轴线上
+  transform: translate(-50%, -100%);
+
+  &:focus-visible {
+    outline: 1px dashed var(--accent-red);
+    outline-offset: 0.6rem;
+    border-radius: 0.2rem;
+  }
+}
+
+.mark {
+  display: block;
+  width: 2.8rem;
+  height: 5.6rem;
+  overflow: visible; // 圈心画在 viewBox 下边缘，下半圈要露出来
+  flex: none;
+
+  path {
+    fill: none;
+    stroke-linecap: round;
+    transition:
+      stroke-width 0.18s ease,
+      opacity 0.18s ease;
+  }
+}
+
+.ring {
+  stroke: var(--text-ink);
+  stroke-width: 1.25;
+}
+
+.lead {
+  stroke: var(--line-dark);
+  stroke-width: 0.75;
+  opacity: 0.5;
+}
+
+.shelf {
+  stroke: var(--line-dark);
+  stroke-width: 1;
+  opacity: 0.7;
+}
+
+.pip {
+  fill: var(--text-ink);
+  stroke: none;
+  opacity: 0;
+  transform: scale(0.4);
+  transform-origin: 12px 48px;
+  transition:
+    opacity 0.18s ease,
+    transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  text-align: center;
+}
+
+.title {
+  font-size: 1.4rem;
+  line-height: 1.45;
+  color: var(--text-ink);
+  text-wrap: balance;
+  padding: 0 0.18em;
+  // 荧光笔刷痕：hover 时从左往右刷过去，跟 Nav 的 .active 是同一套语言。
+  // 这里刷满整行高度（标题可能两行，只刷下沿会漏行）；
+  // 想回到细下划线，把 background-size 的高度从 100% 改成 0.7em、
+  // background-position 改成 0 88% 就行。
+  background-image: linear-gradient(
+    var(--highlight-yellow),
+    var(--highlight-yellow)
+  );
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-size: 0% 100%;
+  transition:
+    color 0.18s ease,
+    background-size 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.date {
+  font-family: var(--font-caveat), cursive;
+  font-size: 1.3rem;
+  line-height: 1.2;
+  color: var(--text-pencil);
+  opacity: 0.75;
+  letter-spacing: 0.02em;
+}
+
+// ── hover / focus ──────────────────────────────────────────────
+.node:hover,
+.node:focus-visible {
+  .title {
+    color: var(--text-ink);
+    background-size: 100% 100%;
+  }
+
+  .date {
+    opacity: 1;
+  }
+
+  .lead {
+    opacity: 0.9;
+  }
+
+  .pip {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .ring {
+    stroke-width: 1.6;
+  }
+}
+
+// ── 支线：挂在轴下方，整体收一号 ────────────────────────────────
+.side {
+  flex-direction: column; // 记号在上、标签在下
+  transform: translate(-50%, 0);
+
+  .mark {
+    width: 2rem;
+    height: 4rem;
+    transform: scaleY(-1); // 圈心翻到上边缘，贴住轴线
+  }
+
+  .title {
+    font-size: 1.2rem;
+    color: var(--text-pencil);
+  }
+
+  .date {
+    font-size: 1.15rem;
+  }
+
+  .ring {
+    stroke-width: 1.1;
+  }
+}
+
+// ── 时间不确定：圈与引线转虚线 ─────────────────────────────────
+.approx {
+  .ring {
+    stroke-dasharray: 2.2 2.8;
+  }
+
+  .lead {
+    stroke-dasharray: 1.5 2.5;
+  }
+
+  .date {
+    font-style: italic;
+  }
+}

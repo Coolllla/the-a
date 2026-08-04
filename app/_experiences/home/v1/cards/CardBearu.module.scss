@@ -2,7 +2,7 @@
   position: absolute;
   height: min(85vh, 132rem);
   width: auto;
-  overflow: hidden;
+  // overflow: hidden;
   container-type: inline-size;
   aspect-ratio: 1418 / 2648;
 }
@@ -11,4 +11,34 @@
   display: block;
   width: 100%;
   height: auto;
+}
+
+.flowerCross {
+  position: absolute;
+  display: block;
+  width: 5%;
+  height: auto;
+  top: 9%;
+  left: 80%;
+}
+
+.nameArt {
+  position: absolute;
+  display: block;
+  top: 35%;
+  left: -10%;
+  img {
+    width: 35%;
+    height: auto;
+  }
+}
+
+.bottomStaff {
+  position: absolute;
+  display: block;
+}
+
+.icon {
+  position: absolute;
+  display: block;
 }
