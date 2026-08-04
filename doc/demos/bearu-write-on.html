@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Bearu 书写动画验证台（字母 B · 双段）</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; display: flex; height: 100vh; overflow: hidden;
+    font: 13px/1.6 system-ui, "Microsoft YaHei", sans-serif;
+    background: #1a1a1e; color: #ddd;
+  }
+  #stage {
+    flex: 1; display: flex; align-items: flex-start; justify-content: center;
+    overflow: auto; padding: 24px;
+  }
+  #stage svg { height: 3000px; flex: none; background: #26262c; }
+  #panel {
+    width: 310px; flex: none; padding: 16px; overflow-y: auto;
+    background: #111114; border-left: 1px solid #333;
+  }
+  #panel h2 { font-size: 14px; margin: 0 0 12px; }
+  #panel h3 { font-size: 12px; margin: 18px 0 6px; color: #8af; }
+  label { display: block; margin: 8px 0 2px; color: #aaa; }
+  label b { color: #fff; font-weight: normal; float: right; }
+  input[type=range] { width: 100%; }
+  button {
+    width: 100%; padding: 8px; margin-top: 10px; cursor: pointer;
+    background: #2563eb; color: #fff; border: 0; border-radius: 6px; font-size: 14px;
+  }
+  button.minor { background: #374151; font-size: 12px; padding: 6px; }
+  button:hover { filter: brightness(1.15); }
+  .row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .row label { margin: 0; flex: 1; }
+  .segpick { display: flex; gap: 6px; margin-bottom: 4px; }
+  .segpick button { margin: 0; padding: 6px; font-size: 12px; background: #374151; }
+  .segpick button.on { background: #b91c1c; }
+  #out {
+    margin-top: 14px; padding: 8px; background: #222; border-radius: 6px;
+    font-family: Consolas, monospace; font-size: 11px; word-break: break-all;
+    color: #9c9; user-select: all;
+  }
+  .hint { color: #777; font-size: 11px; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <svg viewBox="0 0 470 1733" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- 段1 = 资源 2.svg，段2 = 资源 3.svg。各自坐标是各自包围盒，靠各自 rig 变换对到 PNG 上 -->
+      <path id="seg0" fill="none" stroke-linecap="round" stroke-linejoin="round"
+        d="M105.79,61.73c-20.8-2.08-74.32-14-91.87-22.24S.34,15.46,2.35,5,54.83,3.85,76.56,15.91s24.72,19.75,25.62,48.86"/>
+      <path id="seg1" fill="none" stroke-linecap="round" stroke-linejoin="round"
+        d="M105.13,64.59s2.12,38-7.12,42.86-28,.52-37.38-17.18-4.41-25.68-4.41-25.68S51.79,93.64,39.87,99.67s-28.79,1.26-36.3-20.24S4.28,7.82,7.41.19"/>
+      <mask id="write">
+        <g class="rig r0"><use class="m0" href="#seg0" stroke="#fff"/></g>
+        <g class="rig r1"><use class="m1" href="#seg1" stroke="#fff"/></g>
+      </mask>
+    </defs>
+
+    <!-- 被显示层：PNG 原图，被 mask 揭开 -->
+    <image href="../../app/_experiences/home/v1/cards/assets/card-bearu-name.png"
+           width="470" height="1733" mask="url(#write)"/>
+
+    <!-- 底图幽灵层：对齐参照 -->
+    <image id="ghost" href="../../app/_experiences/home/v1/cards/assets/card-bearu-name.png"
+           width="470" height="1733" opacity="0.15"/>
+
+    <!-- 调试线层：当前编辑段红色，另一段橙色 -->
+    <g id="debugLayer">
+      <g class="rig r0"><use class="dbg" data-i="0" href="#seg0" opacity="0.55"/></g>
+      <g class="rig r1"><use class="dbg" data-i="1" href="#seg1" opacity="0.55"/></g>
+    </g>
+  </svg>
+</div>
+
+<div id="panel">
+  <h2>书写动画验证台 · B（双段）</h2>
+
+  <h3>① 对齐（先选段，红=当前编辑段）</h3>
+  <div class="segpick">
+    <button id="pick0" class="on">段1（资源2）</button>
+    <button id="pick1">段2（资源3）</button>
+  </div>
+  <label>平移 X <b id="v-tx"></b></label>
+  <input type="range" id="tx" min="-300" max="600" step="1">
+  <label>平移 Y <b id="v-ty"></b></label>
+  <input type="range" id="ty" min="-300" max="1800" step="1">
+  <label>缩放 <b id="v-s"></b></label>
+  <input type="range" id="s" min="0.5" max="9" step="0.02">
+  <label>旋转 <b id="v-r"></b></label>
+  <input type="range" id="r" min="-180" max="180" step="1">
+  <button id="copy" class="minor">把当前段的 变换+宽度 复制给另一段</button>
+  <div class="row">
+    <label><input type="checkbox" id="showDebug" checked> 显示调试线</label>
+    <label><input type="checkbox" id="showGhost" checked> 显示幽灵层</label>
+  </div>
+
+  <h3>② 遮罩宽度（当前段）</h3>
+  <label>stroke-width <b id="v-w"></b></label>
+  <input type="range" id="w" min="1" max="40" step="0.5">
+  <div class="hint">实际视觉宽度 = 该值 × 该段缩放。两段可以不同宽，这正是拆段的意义。</div>
+
+  <h3>③ 播放</h3>
+  <label>总时长（秒）<b id="v-d"></b></label>
+  <input type="range" id="d" min="0.3" max="6" step="0.1">
+  <div class="row">
+    <label><input type="checkbox" id="swap"> 先播段2（交换顺序）</label>
+  </div>
+  <div class="row">
+    <label><input type="checkbox" id="rev0"> 段1反向</label>
+    <label><input type="checkbox" id="rev1"> 段2反向</label>
+  </div>
+  <button id="play">▶ 播放书写</button>
+
+  <div id="out"></div>
+  <div class="hint">参数自动存 localStorage。两段各时长按路径长度比例分配（匀速书写）。对齐满意后把上面整段 JSON 抄给 agent。</div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const KEY = 'bearu-demo-v2';
+  const paths = [$('seg0'), $('seg1')];
+  const lens = paths.map(p => p.getTotalLength());
+  // 各段旋转中心 = 各自包围盒中心
+  const centers = [[52.9, 32.4], [52.9, 54.9]];
+
+  const defaults = {
+    segs: [
+      { tx: 0, ty: 30, s: 4.4, r: 0, w: 10, rev: false },
+      { tx: 0, ty: 30, s: 4.4, r: 0, w: 10, rev: false },
+    ],
+    d: 1.6, swap: false,
+  };
+  let state;
+  try { state = Object.assign({}, defaults, JSON.parse(localStorage.getItem(KEY) || '{}')); }
+  catch { state = defaults; }
+  let active = 0;
+
+  const sliders = ['tx','ty','s','r','w'];
+
+  function loadActiveToUI() {
+    sliders.forEach(k => { $(k).value = state.segs[active][k]; });
+    $('pick0').classList.toggle('on', active === 0);
+    $('pick1').classList.toggle('on', active === 1);
+  }
+
+  function apply() {
+    state.segs.forEach((seg, i) => {
+      const [cx, cy] = centers[i];
+      const t = `translate(${seg.tx} ${seg.ty}) scale(${seg.s}) rotate(${seg.r} ${cx} ${cy})`;
+      document.querySelectorAll('.r' + i).forEach(g => g.setAttribute('transform', t));
+      document.querySelectorAll(`.m${i}, .dbg[data-i="${i}"]`)
+        .forEach(u => u.setAttribute('stroke-width', seg.w));
+    });
+    document.querySelectorAll('.dbg').forEach(u =>
+      u.setAttribute('stroke', +u.dataset.i === active ? 'red' : 'orange'));
+    sliders.forEach(k => $('v-' + k).textContent = state.segs[active][k]);
+    $('v-d').textContent = state.d;
+    $('debugLayer').style.display = $('showDebug').checked ? '' : 'none';
+    $('ghost').style.display = $('showGhost').checked ? '' : 'none';
+    $('out').textContent = JSON.stringify({ segs: state.segs, 总时长: state.d, 先播段2: state.swap }, null, 1);
+    localStorage.setItem(KEY, JSON.stringify(state));
+  }
+
+  sliders.forEach(k => $(k).addEventListener('input', () => {
+    state.segs[active][k] = parseFloat($(k).value); apply();
+  }));
+  $('d').addEventListener('input', () => { state.d = parseFloat($('d').value); apply(); });
+  $('pick0').addEventListener('click', () => { active = 0; loadActiveToUI(); apply(); });
+  $('pick1').addEventListener('click', () => { active = 1; loadActiveToUI(); apply(); });
+  $('copy').addEventListener('click', () => {
+    state.segs[1 - active] = Object.assign({}, state.segs[active], { rev: state.segs[1 - active].rev });
+    apply();
+  });
+  ['showDebug','showGhost'].forEach(id => $(id).addEventListener('change', apply));
+  ['swap','rev0','rev1'].forEach(id => $(id).addEventListener('change', () => {
+    state.swap = $('swap').checked;
+    state.segs[0].rev = $('rev0').checked;
+    state.segs[1].rev = $('rev1').checked;
+    apply();
+  }));
+
+  $('d').value = state.d;
+  $('swap').checked = state.swap;
+  $('rev0').checked = state.segs[0].rev;
+  $('rev1').checked = state.segs[1].rev;
+  loadActiveToUI();
+  apply();
+
+  // 初始为画完态（全显示），方便对齐
+  const maskUses = [document.querySelector('.m0'), document.querySelector('.m1')];
+  maskUses.forEach((u, i) => {
+    u.setAttribute('stroke-dasharray', lens[i]);
+    u.setAttribute('stroke-dashoffset', 0);
+  });
+
+  $('play').addEventListener('click', () => {
+    const order = state.swap ? [1, 0] : [0, 1];
+    const total = lens[0] + lens[1];
+    let delay = 0;
+    // 先全部藏起来
+    order.forEach(i => maskUses[i].setAttribute('stroke-dashoffset', lens[i]));
+    order.forEach(i => {
+      const dur = state.d * 1000 * (lens[i] / total);   // 按长度分配时长 → 匀速
+      const from = state.segs[i].rev ? -lens[i] : lens[i];
+      maskUses[i].animate(
+        [ { strokeDashoffset: from }, { strokeDashoffset: 0 } ],
+        { duration: dur, delay, easing: 'linear', fill: 'forwards' }
+      );
+      delay += dur;
+    });
+  });
+</script>
+</body>
+</html>
