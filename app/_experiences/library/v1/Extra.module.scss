@@ -1,15 +1,24 @@
 // 番外页的节点环（timeWheel）。
 //
 // 几何：圆心压在视口左边缘的中点上，只露右半圈；选中项永远在 3 点钟方向。
-// 实现上**环本身不转**，而是每个节点各自带一个「相对选中项的角度」--a，
-// 由 Extra.tsx 算好写进 inline style。选中项 --a = 0° 就落在 3 点钟。
+// 实现上**环本身不转**，而是每个节点各自带一个角度 --a，由 Extra.tsx 算好写进
+// inline style。所有节点的 --a 共享同一个偏移量，所以看起来就是整环在转。
 //
 // 为什么不用「整环 rotate + 节点反向 rotate」那种写法：那需要两层 transform
 // 的 transition 时长严丝合缝地同步，差一点就能看到标签歪着追赶。这里只有一层。
 //
-// 下面的尺寸色值都是能看的起手值，视觉归你，随便改。两个主要旋钮：
-//   --ring-r   环半径
-//   --ring-cx  圆心相对视口左边缘的横向偏移（负值 = 更多藏到左边外面去）
+// 右半边是**两个图层**，不是并排的两栏：插画垫在底下（.art），
+// 文字压在它上面（.text）。所以文字不会被插画挤走 —— 想让它们重叠就重叠，
+// 调 --art-w / --text-w 各自变化，互不影响。
+//
+// 下面的尺寸色值都是能看的起手值，视觉归你，随便改。旋钮：
+//   --ring-r        环半径
+//   --ring-cx       圆心相对视口左边缘的横向偏移（负值 = 更多藏到左边外面去）
+//   --art-x         插画层左边缘离环的距离（给负值就能探到环底下去）
+//   --art-w         插画层的宽度
+//   --art-opacity   插画层的不透明度 —— 它是背景，文字要压在上面还能读
+//   --text-w        右侧内容栏的宽度
+//   --text-x        内容栏离视口右边缘的距离
 
 .extra {
   position: relative;
@@ -18,6 +27,13 @@
 
   --ring-r: 38rem;
   --ring-cx: 0px;
+
+  --art-x: 4rem;
+  --art-w: 46rem;
+  --art-opacity: 1;
+
+  --text-w: 42rem;
+  --text-x: 6rem;
 }
 
 // 环的定位容器。半径用 rem —— 窄屏靠断点换根字号整体缩，
@@ -29,6 +45,14 @@
   width: calc(var(--ring-r) * 2);
   height: calc(var(--ring-r) * 2);
   transform: translate(calc(-50% + var(--ring-cx)), -50%);
+  // 环压在插画层之上 —— 这样 --art-x 给负值把插画探到环底下时，
+  // 环的线和节点仍在插画前面（插画是"垫着的"那一层）
+  z-index: 1;
+
+  // 这个 div 是个 76rem 的大圆，虽然只有一圈边框、中间全透明，
+  // 但透明区域照样吃指针事件，会挡住底下的东西。所以整层关掉，
+  // 只在真正要点的 .hit 上打开。
+  pointer-events: none;
 
   // 环上那圈线。不想要就把这两行删掉，节点照样排得对
   border: 1px solid var(--line-light);
@@ -56,6 +80,7 @@
 }
 
 .hit {
+  pointer-events: auto; // .ring 整层关掉了，这里是唯一要点的东西
   display: flex;
   align-items: center;
   gap: 0.8rem;
@@ -114,23 +139,58 @@
   }
 }
 
-// 右侧内容。left 跟着 --ring-r 走，改半径不用回来重调这里
-.panel {
+// ── 右半边 ──────────────────────────────────────────────────
+//
+// .content 本身**不排版**，只是一块占住"环右边所有地方"的定位画布，
+// 让里面两个图层各自按自己的坐标钉住：插画垫底（.art），文字压在上面（.text）。
+//
+// left 跟着 --ring-r 走，改半径不用回来重调这里。
+// 之所以让 .content 而不是 .art / .text 各自去算 --ring-r：
+// 环的半径只在这一处出现，改一个值整块跟着走。
+.content {
   position: absolute;
-  top: 50%;
-  left: calc(var(--ring-r) + 8rem);
-  transform: translateY(-50%);
-  max-width: 46rem;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--ring-r) + var(--art-x));
+  right: 0;
+
+  // 切换时这一整块会重建（Extra.tsx 在它上面挂了 key），所以这条 animation
+  // 每次切换都重播一遍，等于白拿一个入场过渡 —— 插画和文字一起进。
+  // 全局的 prefers-reduced-motion 会把时长压成 0.01ms，不用另写降级。
+  // 将来包 AnimatePresence 做「旧的先退、新的再进」时把这条删掉。
+  animation: content-in 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
-.panelDate {
+// 只写 from，to 就是元素自己的计算值。
+// .content 上没有别的 transform，所以这里可以只写位移，不用拼回什么东西
+// （之前它是垂直居中的，from 里漏了 translateY(-50%) 会掉下去 —— 现在没这个坑了）。
+@keyframes content-in {
+  from {
+    opacity: 0;
+    transform: translateX(1.6rem);
+  }
+}
+
+// 文字层。压在插画之上，靠视口右边缘钉住。
+// 宽度是写死的 --text-w 而不是 max-width —— 它不参与任何流式布局，
+// 位置只由 right / width 决定，插画变宽变窄都不会推它。
+.text {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: var(--text-x);
+  transform: translateY(-50%);
+  width: var(--text-w);
+}
+
+.contentDate {
   margin: 0;
   font-family: var(--font-caveat), cursive;
   font-size: 1.6rem;
   color: var(--text-pencil);
 }
 
-.panelTitle {
+.contentTitle {
   margin: 0.4rem 0 1.6rem;
   font-size: 3.2rem;
   line-height: 1.3;
@@ -150,5 +210,53 @@
   &:hover {
     border-bottom-color: var(--accent-red);
     color: var(--accent-red);
+  }
+}
+
+// 插画层 —— **垫在背景的一层**，不是并排的一栏。
+// 它不挤压文字，文字可以直接压在它上面（.text 的 z-index 更高）；
+// 想让它们重叠就把 --art-w 调大，想分开就调小，两边互不影响。
+//
+// 位置：左边缘贴在 .content 的左边（= 环右边缘 + --art-x），垂直居中。
+// --art-x 给负值就能探到环底下去（环有 z-index: 1，仍在插画前面）。
+// 想做成整块右侧满幅背景，把 left/width/aspect-ratio 换成 inset: 0 就行。
+//
+// 现在的样子是个**明摆着的占位框**，不是视觉稿 —— 斜纹和"插画位"三个字
+// 就是为了让人一眼看出资源还没进来，不会误当成设计定稿。
+//
+// 资源到位后：删掉 border / background / ::after 三段，容器保留
+// position / 尺寸 / z-index，里面塞 <Image fill sizes="46rem" alt="" />。
+// 数据里也要同步给上路径（见 Extra.tsx 的 Story.art）。
+.art {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: var(--art-w);
+  // 起手值。资源到位后按真图的真实比例改，或者直接给 height
+  aspect-ratio: 3 / 4;
+  opacity: var(--art-opacity);
+
+  // 装饰层，永远不该吃到点击 —— 它盖住的区域底下将来可能有别的东西
+  pointer-events: none;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px dashed var(--line-light);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent 0 1.4rem,
+      var(--line-light) 1.4rem 1.5rem
+    ),
+    var(--bg-card);
+
+  &::after {
+    content: "插画位";
+    font-family: var(--font-caveat), cursive;
+    font-size: 1.6rem;
+    color: var(--text-pencil);
   }
 }
