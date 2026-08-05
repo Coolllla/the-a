@@ -55,13 +55,19 @@ export default function Extra() {
         </ul>
       </div>
 
-      {/* 右侧内容。key 挂在这里，将来要做切换淡入直接往外包一层就行 */}
-      <div className={styles.panel} key={current.id}>
-        <p className={styles.panelDate}>{current.date}</p>
-        <h2 className={styles.panelTitle}>{current.title}</h2>
-        <Link href={current.target} className={styles.enter}>
-          阅读
-        </Link>
+      {/* 右半边：插画 + 内容当一整块。
+          key 挂在这里，切换时整块重建 —— 将来往外包一层 AnimatePresence 就有过渡了 */}
+      <div className={styles.content} key={current.id}>
+        <div className={styles.text}>
+          <p className={styles.contentDate}>{current.date}</p>
+          <h2 className={styles.contentTitle}>{current.title}</h2>
+          <Link href={current.target} className={styles.enter}>
+            阅读
+          </Link>
+        </div>
+
+        {/* 插画位。资源到位后换成 next/image，数据里也还要加一个图片路径字段 */}
+        <div className={styles.art} aria-hidden="true" />
       </div>
     </section>
   );
