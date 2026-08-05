@@ -23,7 +23,7 @@ import asset3 from "./assets/card-bearu-asset3.png";
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useGSAP } from "@gsap/react";
-import { buildBearuIntro } from "./BuildBearuIntro";
+import { buildBearuIntro } from "./buildBearuIntro";
 import { attachDevTools } from "@/app/_lib/motion/devtools";
 
 const TEXT: {
@@ -51,14 +51,13 @@ export default function CardBearu() {
       const tl = buildBearuIntro(root);
       if (reduceMotion) {
         tl.progress(1);
-        root.dataset.glitch = "on";
         return;
       }
 
       tl.play();
       // return attachDevTools(tl, "bearu-intro");
     },
-    { scope: cardRef, dependencies: [reduceMotion] }
+    { scope: cardRef, dependencies: [reduceMotion] },
   );
 
   const handleClick = () => {
@@ -70,7 +69,7 @@ export default function CardBearu() {
     <div className={styles.card} ref={cardRef}>
       <Image src={base} alt="" priority className={styles.base} />
       <div>
-        <div onClick={handleClick} className={styles.flowerCross}>
+        <div onClick={handleClick} role="button" className={styles.flowerCross}>
           {iconState === "cross" ? (
             <Image src={cross} alt="" className={styles.cross} />
           ) : (

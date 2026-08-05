@@ -56,15 +56,13 @@ const variantsMore = {
 };
 
 function CardWorl() {
-  const [phase, setPhase] = useState<Phase>("cue");
   const reduceMotion = useReducedMotion();
+  const [hoverPhase, setHoverPhase] = useState<Phase>("cue");
   const handleMouseEvent = (status: HoverPhase) => {
-    setPhase(status);
+    setHoverPhase(status);
   };
 
-  useEffect(() => {
-    if (reduceMotion) setPhase("idle");
-  }, [reduceMotion]);
+  const phase = reduceMotion ? "idle" : hoverPhase;
 
   return (
     <div className={styles.card}>
@@ -102,7 +100,7 @@ function CardWorl() {
           variants={variantsMore}
           transition={{ duration: WIPE, ease: EASE }}
           onAnimationComplete={(d) =>
-            (d === "out" || d === "cue") && setPhase("idle")
+            (d === "out" || d === "cue") && setHoverPhase("idle")
           }
         >
           <Image src={more} alt="" />

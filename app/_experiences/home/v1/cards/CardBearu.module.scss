@@ -25,7 +25,8 @@ $iconColor: #9c9c9c;
   cursor: pointer;
   // background-color: red;
 
-  transition: filter 2s cubic-bezier(0.075, 0.82, 0.165, 1) 0s,
+  transition:
+    filter 2s cubic-bezier(0.075, 0.82, 0.165, 1) 0s,
     opacity 3s ease-in-out 0.5s;
   // transition: opacity 4s ease-in-out 0.5s;
   &:hover {
@@ -78,7 +79,8 @@ $iconColor: #9c9c9c;
   color: $iconColor;
   font-family: var(--font-roxboroughCF), var(--font-noto-serif-sc);
   opacity: 1;
-  transition: filter 2s cubic-bezier(0.075, 0.82, 0.165, 1) 0.7s,
+  transition:
+    filter 2s cubic-bezier(0.075, 0.82, 0.165, 1) 0.7s,
     opacity 3s ease-in-out 1.2s;
   &[data-icon="flower"] {
     letter-spacing: 0;
@@ -111,10 +113,6 @@ $iconColor: #9c9c9c;
   border-radius: 5px;
   border-top: 1px solid #eee;
   // border-left: 1px solid #eee;
-}
-
-.card[data-glitch="on"] .text1 {
-  animation: glitch 0.36s steps(1, end);
 }
 
 .bottomStaff {
@@ -173,32 +171,5 @@ $iconColor: #9c9c9c;
   }
   100% {
     transform: translateY(0);
-  }
-}
-
-@keyframes glitch {
-  0% {
-    transform: translateX(0);
-    clip-path: inset(0 0 0 0);
-  }
-  20% {
-    transform: translateX(-1.2%);
-    clip-path: inset(20% 0 55% 0);
-  }
-  40% {
-    transform: translateX(0.8%);
-    clip-path: inset(60% 0 15% 0);
-  }
-  60% {
-    transform: translateX(-0.4%);
-    clip-path: inset(35% 0 40% 0);
-  }
-  80% {
-    transform: translateX(0);
-    clip-path: inset(0 0 0 0);
-  }
-  100% {
-    transform: translateX(0);
-    clip-path: inset(0 0 0 0);
   }
 }

@@ -1,17 +1,9 @@
-// | 时间 | 发生什么          | ease       |
-// | 0.00 | blue 层落位       | power3.out |
-// | 0.08 | red 层落位        | power3.out |
-// | 0.16 | 主体黑层落位      | power3.out |
-// | 0.55 | text1 的 glitch 开 | (交给 CSS) |
-// | 0.70 | 底部文字 / 更多    | power3.out |
-
 import gsap from "gsap";
 
 const EASE = "power3.out";
 const CLIP = {
   idle: "polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)",
   full: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 108%)",
-  gone: "polygon(0% 108%, 100% 100%, 100% 100%, 0% 108%)",
 };
 
 function glitch(frames: NodeListOf<Element>, text: NodeListOf<Element>) {
@@ -59,16 +51,16 @@ export function buildBearuIntro(root: HTMLElement) {
       stagger: 0.08,
       duration: 1,
     },
-    0.2
+    0.2,
   )
     .addLabel("nameWritten")
     .to(
       act("name-layer"),
       { autoAlpha: 0, duration: 2, ease: "back.out" },
-      "+=0.6"
+      "+=0.6",
     )
     .add(glitch(frames, act("text")), "nameWritten+=0.1")
-    .from(act("tail"), { autoAlpha: 0, y: "8%", stagger: 0.3 }, ">+0.1");
+    .from(act("tail"), { autoAlpha: 0, y: "8%", stagger: 0.3 }, ">+=0.1");
 
   return tl;
 }

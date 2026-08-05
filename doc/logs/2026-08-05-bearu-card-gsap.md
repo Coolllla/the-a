@@ -75,19 +75,39 @@
 
 ## 留给下一场的接力
 
-### ① 代码待修（本场发现，都没动手改，改前先看一眼现状）
+### ① 代码待修 —— 已于同日晚结算（下面是**核实过**的现状，不是计划）
 
-| # | 位置 | 问题 |
+| # | 位置 | 状态 |
 |---|---|---|
-| 1 | `CardBearu.tsx` 的 `useGSAP` | `root.dataset.glitch = "on"` **只写在 `reduceMotion` 分支里** —— 结果那段 CSS glitch 动画只在用户要求"减少动效"时才播，方向整个反了 |
-| 2 | `CardBearu.module.scss` | 承上：`@keyframes glitch` + `.card[data-glitch="on"] .text1` 是"glitch 交给 CSS"旧方案的**孤儿**，glitch 已改成 GSAP 切帧。要么删掉，要么想清楚它还演什么角色 |
-| 3 | `BuildBearuIntro.ts` 文件头 | 那张 `\| 时间 \| 发生什么 \|` 的**绝对秒节奏表已经和代码对不上了**（代码用相对位置 + label）。表里还写着"text1 的 glitch 开（交给 CSS）"，也是旧方案。改成「事件顺序 + 相对量」，或者干脆删掉 —— 过期的表比没有表更坏 |
-| 4 | `BuildBearuIntro.ts` | 文件名是 PascalCase，但它导出的是普通函数不是组件；项目里非组件模块（`hitTest.ts` / `devtools.ts` / `config.ts`）都是 lowerCamel。建议改名 `buildBearuIntro.ts`（Windows 上改大小写要 `git mv` 两步，否则 git 认不出） |
-| 5 | `CardBearu.tsx:27` | `attachDevTools` 的 `import` 还留着但调用被注释掉了 → ESLint 未使用警告。要么恢复调用，要么连 import 一起注释 |
-| 6 | `BuildBearuIntro.ts` | `CLIP.gone` 定义了没用到；`fromTo` 两个 vars 里的 `stagger` 有一个是死的（from-vars 那个） |
-| 7 | `cards/assets/` | 三个 `资源 1.svg` / `资源 2.svg` / `资源 3.svg` 违反命名约定（全小写短横线英文、不要空格中文）。已确认**当前代码里零引用**，来源不明（像是某个导出工具的默认名）。要么删，要么按 `card-bearu-*` 改名后用起来 |
-| 8 | `CardBearu.module.scss` | `.picRed` / `.picBlue` 的 RGB 分离偏移还是 `0.3rem`，卡内一切度量该锚在卡宽上（`cqw`），见 7-31 log 决策 2 |
-| 9 | `public/HYPixel11pxU-2.ttf` | 孤儿文件。真正在用的是 `app/_assets/fonts/HYPixel11pxU-2.woff2`，这个 ttf 是"字体该进 public"那个文档错误留下的 |
+| 1 | `CardBearu.tsx` 的 `useGSAP` | ✅ 已修。`dataset.glitch` 整个移除了 —— glitch 既然改走 GSAP 切帧，这个开关本身就没有存在意义，比"把它挪出 reduceMotion 分支"更彻底 |
+| 2 | `CardBearu.module.scss` | ✅ 已删（`@keyframes glitch` + `.card[data-glitch="on"] .text1` 两处孤儿） |
+| 3 | `buildBearuIntro.ts` 文件头 | ✅ 已删那张过期的绝对秒节奏表 |
+| 4 | 文件命名 | ✅ 已改名 `buildBearuIntro.ts`（lowerCamel，与 `hitTest.ts` / `devtools.ts` 对齐） |
+| 5 | `CardBearu.tsx` | ❌ **仍在**。`attachDevTools` 的 import 还留着、调用仍被注释 → `pnpm lint` 报未使用警告 |
+| 6 | `buildBearuIntro.ts` | ⚠️ **半完成**。`CLIP.gone` ✅ 已删；但 `fromTo` **from-vars 里那对死的 `stagger: 0.08` / `duration: 1` 仍在**（第 46-47 行）。机制解释已补进 [7.29 笔记](../notes/7.29-动画编排方案.md) §② |
+| 7 | `cards/assets/` | ✅ 三个 `资源 N.svg` 已删 |
+| 8 | `.picRed` / `.picBlue` 的 `0.3rem` | 🚩 **判定不改**（见下「已判定不改」）。原建议错了，已毕业成 [tech-stack §3.8](../decisions/tech-stack.md) 的单位第三层 |
+| 9 | `public/HYPixel11pxU-2.ttf` | ✅ 已删 |
+
+顺带修掉的：`">+0.1"` → `">+=0.1"`（非规范写法，`>` 前缀不会退化成 label，所以没坏，但不规范）。
+
+### ①bis 同日新发现的待修
+
+| 位置 | 级别 | 问题 |
+|---|---|---|
+| `CardWorl.tsx:66` | **error（挡 `pnpm lint`）** | `react-hooks/set-state-in-effect`。`useEffect(() => { if (reduceMotion) setPhase("idle") })` 被判级联渲染。修法是**渲染时派生**：`const phase = reduceMotion ? "idle" : hoverPhase`，effect 整个删掉。不能写成 `useState(reduceMotion ? …)` —— `useReducedMotion()` 返回 `boolean \| null`，首帧可能是 null 后变 true，初值只取一次会错。**`CardBearu` 已经是对的写法**（在 `useGSAP` 里直接判，不过 state），worl 是先写的所以留了老写法 |
+| `CharacterImg.tsx:21` | warning | `Fit` 类型定义了没用 |
+| `CardBearu.tsx` 的 `.flowerCross` | a11y | 它是 `<div onClick>` —— Tab 不到、Enter/Space 不响应、读屏器不知道可点。补 `role="button"` 只解决第三条，还差 `tabIndex={0}` + 键盘事件（Space 要 `preventDefault` 防滚页）；**直接用 `<button type="button">` 三样全免费**，代价是 SCSS 要重置默认样式（`appearance/background/border/padding/color/font`）。可选再给 `.desc` 加 `aria-live="polite"`，否则读屏器用户点完不知道文字换了 |
+| 同上 | 交互 | **点击热区是整条卡宽**：`.flowerCross { position: absolute; width: 100% }` 里只装了个 2.68% 宽的图标，`cursor: pointer` 会在整条横带上出现（可肉眼验证）。改 `<button>` 时顺手收窄 |
+
+### ①ter 已判定不改（**下一场不要再提这几条**）
+
+| 项 | 判定与理由 |
+|---|---|
+| reduced-motion 下看不到 nameArt | **是设定。** nameArt 本身就是会遮挡画面的引入动画，演完就该消失，所以 timeline 末态 `autoAlpha: 0` 是对的，`progress(1)` 直接跳末态也是对的。曾建议"降级应跳到 `nameWritten` label 那个可见中间态"——**作废** |
+| `.text` 的 `font-size: 4cqw` 让点阵字发虚 | **接受现状。** HYPixel11px 是 11px 网格字，理论上该用 `@container` 只在 11/22px 之间跳，但那样字号只剩两档、中间尺寸全靠妥协，为锐利度不值。实际观感可接受 |
+| `.picRed / .picBlue` 的 `0.3rem` | **保留 `rem`。** RGB 分离是恒定视觉厚度，不是随卡缩放的排版度量。已升格为通用判据进 tech-stack §3.8 |
+| `width: 100%` 包裹层这套手法 | **遇到再调整。** 它靠"包裹层宽度==卡宽"这个隐含前提让子元素的 `%` 等价于卡宽，改了包裹层宽度所有子元素会静默缩放。上面那个热区问题是它的第一次现形 |
 
 ### ② 验证还没做
 
@@ -98,5 +118,14 @@
 
 - 第三、四张卡（pearuth / duke）的设计与实现。
 - `/characters/<name>` 路由未建，`CardWorl` 和 `CardBearu` 的 `<Link href="#">` 都还是占位。
-- **rem 断点阶梯**（7-31 log 决策 2 的卡外那半）：`62.5%` → `56.25%`(≤1280) → `50%`(≤900)。落地前先查项目有没有已定义的断点变量，别开第二套。
+- **rem 断点阶梯**（7-31 log 决策 2 的卡外那半）：`62.5%` → `56.25%`(≤1280) → `50%`(≤900)。`globals.scss` 目前仍是裸的 `62.5%`。落地前先查项目有没有已定义的断点变量，别开第二套。→ 决策已毕业进 [tech-stack §3.8](../decisions/tech-stack.md)（同时**推翻了那里原来写的「字号用 clamp + vw」**）。
 - 「超小屏具体多宽」仍未定 —— 1280 笔记本用断点就够，手机 375–430px 需要给卡一个**不同的形态**（那是设计工作不是单位工作）。
+- `CardBearu` 的 base 图 2.3MB、实际显示约 410px 宽，`<Image>` 没给 `sizes`（默认按 `100vw` 算候选）。低优先级。
+
+### ④ 同日另修：`useParallax` 的 `any`（不属 bearu 卡，顺手清 lint）
+
+`quickTos.forEach(({ xTo, yTo, offsetU }: any) => …)` 这个 `any` **掩盖了一条真实的空指针路径** —— 上游 `layers.map()` 有 `if (!el) return null`，那个 null 既没被检查也没被跳过。中途试过给参数补 `{…} | null` 注解，结果是 `X | null` **不能在参数位置解构**（TS2339 ×3）—— 补注解治不了，得让它不可空。最终在源头 `.filter((q) => q !== null)` 消除，下游注解全删、TS 自己推。
+
+两条认知已毕业进 [tech-stack §3.10](../decisions/tech-stack.md)：TS 5.5+ 的 inferred type predicates 让 `.filter` 不再需要手写 `q is T` 谓词；以及**显式 `any` 只有 ESLint 会拦，`tsc` 不管**（`noImplicitAny` 只管隐式），所以「`tsc` 过、`pnpm lint` 挂」不是矛盾。
+
+> 更一般的教训：**`any` 出现的地方要先怀疑"是不是有个不该存在的值被塞进来了"**，而不是急着补类型注解。
