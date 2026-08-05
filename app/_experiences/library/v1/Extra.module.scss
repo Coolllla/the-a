@@ -1,0 +1,154 @@
+// 番外页的节点环（timeWheel）。
+//
+// 几何：圆心压在视口左边缘的中点上，只露右半圈；选中项永远在 3 点钟方向。
+// 实现上**环本身不转**，而是每个节点各自带一个「相对选中项的角度」--a，
+// 由 Extra.tsx 算好写进 inline style。选中项 --a = 0° 就落在 3 点钟。
+//
+// 为什么不用「整环 rotate + 节点反向 rotate」那种写法：那需要两层 transform
+// 的 transition 时长严丝合缝地同步，差一点就能看到标签歪着追赶。这里只有一层。
+//
+// 下面的尺寸色值都是能看的起手值，视觉归你，随便改。两个主要旋钮：
+//   --ring-r   环半径
+//   --ring-cx  圆心相对视口左边缘的横向偏移（负值 = 更多藏到左边外面去）
+
+.extra {
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden; // 环的左半圈在视口外，不裁会拽出横向滚动条
+
+  --ring-r: 38rem;
+  --ring-cx: 0px;
+}
+
+// 环的定位容器。半径用 rem —— 窄屏靠断点换根字号整体缩，
+// 不在这里写媒体查询（项目的单位分层约定）。
+.ring {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: calc(var(--ring-r) * 2);
+  height: calc(var(--ring-r) * 2);
+  transform: translate(calc(-50% + var(--ring-cx)), -50%);
+
+  // 环上那圈线。不想要就把这两行删掉，节点照样排得对
+  border: 1px solid var(--line-light);
+  border-radius: 50%;
+}
+
+.nodes {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.node {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  // 转到自己的角度 → 推到半径上 → 把角度转回来（标签保持水平）→ 中心对齐锚点
+  transform: rotate(var(--a)) translateX(var(--ring-r))
+    rotate(calc(-1 * var(--a))) translate(-50%, -50%);
+  // 这条 transition 就是"转盘转动"本身。正式动画接 GSAP 时把它删掉，
+  // 别让 CSS 和 GSAP 同时写同一个 transform。
+  transition: transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.hit {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.6rem 1rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--text-pencil);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--text-ink);
+  }
+
+  &:focus-visible {
+    outline: 1px dashed var(--accent-red);
+    outline-offset: 0.4rem;
+    border-radius: 0.2rem;
+  }
+}
+
+.dot {
+  flex: none;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--line-dark);
+  transition:
+    width 0.3s ease,
+    height 0.3s ease,
+    background-color 0.3s ease;
+}
+
+.date {
+  font-family: var(--font-caveat), cursive;
+  font-size: 1.5rem;
+  line-height: 1;
+  transition: font-size 0.3s ease;
+}
+
+.active {
+  .hit {
+    color: var(--text-ink);
+  }
+
+  .dot {
+    width: 1.1rem;
+    height: 1.1rem;
+    background: var(--accent-red);
+  }
+
+  .date {
+    font-size: 2.2rem;
+  }
+}
+
+// 右侧内容。left 跟着 --ring-r 走，改半径不用回来重调这里
+.panel {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--ring-r) + 8rem);
+  transform: translateY(-50%);
+  max-width: 46rem;
+}
+
+.panelDate {
+  margin: 0;
+  font-family: var(--font-caveat), cursive;
+  font-size: 1.6rem;
+  color: var(--text-pencil);
+}
+
+.panelTitle {
+  margin: 0.4rem 0 1.6rem;
+  font-size: 3.2rem;
+  line-height: 1.3;
+  color: var(--text-ink);
+}
+
+// 记得关下划线和颜色 —— 项目里没有 a 的全局 reset
+// （见 doc/notes/8.4-Link下划线与全局reset.md）
+.enter {
+  display: inline-block;
+  text-decoration: none;
+  color: var(--text-ink);
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--line-dark);
+  padding-bottom: 0.2rem;
+
+  &:hover {
+    border-bottom-color: var(--accent-red);
+    color: var(--accent-red);
+  }
+}
