@@ -51,7 +51,9 @@ app/
 │   ├── library/page.tsx       # 藏书阁入口（URL 仍是 /library）
 │   └── testview/              # 字体与色板预览页（开发自用，非站点内容）
 │
-├── (reading)/                 # 阅读区路由分组——窄栏、不加载重动画库   ⏳ 未建
+├── (reading)/                 # 阅读区路由分组——窄栏、不加载重动画库
+│   │                          #   ⚠️ 与 (standard) 平级，不嵌套在它内部（见 §八 08-06 条）
+│   ├── layout.tsx             # <Nav />（走 DEFAULTS，那套默认值本就是按阅读态给的）
 │   ├── chapters/[slug]/page.tsx
 │   └── archive/page.tsx
 │
@@ -124,6 +126,7 @@ Next.js App Router 中 `(name)` 是路由分组——不进入 URL 路径，但�
 |---|---|---|
 | `(immersive)` | `<Nav theme="dark" />`，悬浮不让位 | `/`（首页） |
 | `(standard)` | `<Nav />` 走 DEFAULTS（浅色） | `/library`、`/testview` |
+| `(reading)` | `<Nav />` 走 DEFAULTS | `/chapters/[slug]`（2026-08-06 建，与上面两个平级） |
 
 > ⚠️ **落在两个分组之外的页面不会有 Nav**（如直接建 `app/foo/page.tsx`）。这是当前结构唯一容易踩的坑，根 `layout.tsx` 里留了注释提醒。
 
@@ -139,6 +142,8 @@ Next.js App Router 中 `(name)` 是路由分组——不进入 URL 路径，但�
 `(immersive)` / `(standard)` 分的是 **Nav 姿态**轴；初版规划的 `(reading)` / `(experience)` 分的是**布局与动效负载**轴（窄栏 vs 全宽、是否加载重动画库）。两者不重合——将来 `world` / `codex` 大概率属于"体验区"（重动效）但要浅色 Nav。
 
 因此 `(experience)` 不再作为独立分组：它的诉求已被 `(immersive)` 覆盖或将由页面自身承担。`(reading)` 仍保留规划，因为"不加载重动画库"是真实的打包差异，且 Next.js 分组可嵌套——阅读区开工时写成 `app/(standard)/(reading)/chapters/[slug]/` 即可，两条轴互不打架。
+
+> ⚠️ **上一段末尾那句"写成 `app/(standard)/(reading)/…` 即可"已于 2026-08-06 推翻**（本节其余内容仍有效）。Nav 挂进分组 layout 之后，嵌套会导致父子 layout 各挂一个 Nav。在 Nav 这条轴上"两条轴"其实是一条：一个页面只能属于一个 Nav 姿态分组。现行做法是 `app/(reading)/` 与另两个分组平级，见 §八 的 2026-08-06 条。
 
 ### 页面薄壳与 `current.ts`
 
@@ -211,6 +216,7 @@ export { default } from './v1/HomeV1'
 
 ## 八、决策变更日志
 
+- **2026-08-06**：**`(reading)` 分组落地，并推翻 §三 末尾"嵌套在 `(standard)` 内"的规划**——改为与 `(immersive)` / `(standard)` **平级**。理由：那句规划写在「Nav 挂进分组 layout」（2026-07-28）之前，嵌套时父 layout 已渲染 `<Nav />`，子 layout 要覆盖姿态就得再渲染一个，页面上会挂两个 Nav。结论是**在 Nav 这条轴上"两条不重合的轴"其实是一条**：一个页面只能属于一个 Nav 姿态分组；`(reading)` 存在的实质理由（不加载重动画库的打包差异）在平级时完全成立，不损失任何东西。同时定下三件与本节相关的事：① **内容真源放仓库根 `content/`**，不进 `app/`（写作编辑器要 `Cmd+S` 直写它，路径必须浅且永不移动；且 slug 是数据而非文件系统路由）——这是 `.mdx` "不进 `_data/`" 之外的位置补全；② **章节页用 `[slug]` 动态 import**，不让 `.mdx` 当路由文件；③ **不做 `/chapters` 目录页**，`/library` 就是目录（Timeline = 主线、Extra = 番外），`getAllChapters()` 的消费者是上下章导航与阅读页内的目录抽屉组件，不是页面。三层模型与版本化机制本身未变。见 [`logs/2026-08-06-reading-mdx-pipeline.md`](../logs/2026-08-06-reading-mdx-pipeline.md)。
 - **2026-08-04**：目录图补上藏书阁 v1 的实际文件（`Timeline.tsx` / `Chapter.tsx` / `data.ts`）。两点值得记：① **体验层组件可以是 client component**——`Timeline` 为了把竖向滚轮转成横向滚动带了 `"use client"`，三层模型不要求体验层全是 Server Component；② `v1/data.ts` 是**临时演示数据**，放在体验层内属于故意的例外，真数据仍按 §三 的约定去 `_data/library/`，接手时不要把它当成数据层已落地。机制本身未变。见 [`logs/2026-07-27-library-skeleton.md`](../logs/2026-07-27-library-skeleton.md) §十二~十四。
 - **2026-07-28**：**撤回 2026-07-27 那条"数据层已落地"**。`_data/library/` 与 `_types/library.ts` 已删除，`_data/` `_types/` 回到"规划位置、未建"状态。原因不是方案有问题，而是那套 schema 与占位数据由 AI 代拟，用户读了之后判断"不是自己一步步搭起来的，会晕掉这些是干什么的"——藏书阁改由用户自己搭，AI 转为辅助。位置约定（`_data/<域>/` + `_types/<域>.ts`）保留为约定。同时 `_experiences/library/v1/` 下的十余个占位组件也一并删除，只留 `LibraryV1.tsx` 空页面。
 - **2026-07-28**：**推翻"暂不建路由分组"**（该判断由 2026-07-27 条与 2026-07-24 log 立下，理由是"某些路由需要不同 layout"属空想需求）。真实需求出现了：首页需要深色 Nav、其余页面浅色，而 Nav 挂在根 layout 时无法按路由变姿态。故建 `(immersive)` / `(standard)` 两个分组，各自 layout 用 props 声明 `NavMode`，Nav 从根 layout 卸下并保持 Server Component。`app/page.tsx` → `app/(immersive)/page.tsx`，`app/library/`、`app/testview/` → `app/(standard)/` 下（URL 全部不变）。同时确定 `(immersive)`/`(standard)` 与初版规划的 `(reading)`/`(experience)` 是**两条不重合的轴**：`(experience)` 不再作为独立分组，`(reading)` 保留规划并可嵌套在 `(standard)` 内。三层模型与版本化机制本身未变。见 [`logs/2026-07-28-nav-route-groups.md`](../logs/2026-07-28-nav-route-groups.md)。

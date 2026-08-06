@@ -119,6 +119,16 @@
 - **内容生产在独立仓库**：日常码文用一个独立的桌面写作工具（不在本仓库内），其真源是编辑器自己的文档 JSON，**MDX 是单向导出的产物 —— 只出不进**。手改本仓库的 `.mdx` 会在下次导出时被覆盖。调研与方案见 [`doc/notes/7.27-mdx编辑器调研.md`](../notes/7.27-mdx编辑器调研.md)。
 - **正文会用到两个行内组件，渲染侧需实现**：`<Term id="…">词</Term>`（悬停弹出世界观词条卡，id 指向 `/codex` 词条）与 `<Fx type="…">一段字</Fx>`（视觉气氛效果，type 为可扩展枚举）。两者都是**包裹文字的行内标记**，不是块级组件。章节插图仍走纯 Markdown `![](…)`，不做自定义组件。
 
+#### 追加（2026-08-06）：管道落地，元数据只走 fs 一条路
+
+MDX 管道已集成。相对 2026-07-27 那条补充，实现上收窄了一处：
+
+- **只装 `remark-frontmatter`，不装 `remark-mdx-frontmatter`。** 前者的唯一职责是让解析器别把 `---` 当 `<hr />` 渲进正文；后者（把 YAML 转成模块 `export`）不需要 —— 章节页是 Server Component，可以直接 `fs` 读文件头，与目录侧**共用同一个函数**（`app/_lib/chapters.ts`）。这样元数据只有一条读取路径，不会出现「目录侧走 fs、章节页走 export」两套并行。决策 9 的「不编译就读」诉求不变，只是实现更省。
+- ⚠️ **Turbopack（Next 16 起是 dev 与 build 的默认）下 remark / rehype 插件必须写成字符串包名 + 可序列化 options**，不能 import 进来传函数引用 —— JS 函数传不进 Rust 侧。凭训练数据写的 `remarkPlugins: [remarkFrontmatter]` 在这里会挂。
+- ⚠️ **YAML 会把不加引号的 `date: 2026-08-06` 解析成 Date 对象**，与本项目 `date`「给人看的串、不参与计算」的语义冲突。`chapters.ts` 已兜住，但**编辑器的导出器也要知道**这条。
+
+其余坑与决策见 [`logs/2026-08-06-reading-mdx-pipeline.md`](../logs/2026-08-06-reading-mdx-pipeline.md)。
+
 ### 3.5 动画：双库分工 + CSS 兜底
 
 **结论**：
@@ -308,8 +318,8 @@
 | `app/styles/` 目录骨架（tokens / mixins / globals） | ⏳ 目前只有 `app/globals.scss`，尚未拆分 tokens/mixins/globals 三层 |
 | 设计 token 第一版（颜色 / 字号 / 间距 / 动效曲线 / 断点） | ⏳ 已在 `globals.scss` 落定"手绘日记本"色板 v1，其他维度待补 |
 | `tsconfig` 开启 strict 模式（已默认开启，需校验） | ✅ 已校验（`"strict": true`）|
-| 世界观类型集中定义目录 | ⏳ 待建（位置已定为 `app/_types/`，尚未启用） |
-| `@next/mdx` 集成 + 一篇示例 MDX 章节 | ⏳ |
+| 世界观类型集中定义目录 | ✅ 已启用（`app/_types/library.ts`、`app/_types/chapter.ts`）|
+| `@next/mdx` 集成 + 一篇示例 MDX 章节 | ⏳ 管道已集成（2026-08-06，见 §3.4 追加节）；示例只有 `content/chapters/00-pipeline-check.mdx` 这个可删的自检件，**端到端渲染尚未验证**（还没有页面 import 过 `.mdx`）|
 | Radix UI 按需引入（首批：Dialog / Tooltip） | ⏳ |
 | GSAP 按需引入 | ✅ 完成（首页 v1 `useParallax` 使用 `@gsap/react`） |
 | Motion 按需引入 | ✅ 完成（首页 v1 `AnimatePresence` + `useMotionValue`/`useSpring`） |
@@ -321,6 +331,7 @@
 
 记录技术选型的重大调整。格式：`YYYY-MM-DD：变更内容（原因）`。
 
+- **2026-08-06**：**§3.4 追加一节记录 MDX 管道落地**（选型未变，只收窄实现）：只装 `remark-frontmatter` 而不装 `remark-mdx-frontmatter`，元数据统一由 `app/_lib/chapters.ts` 用 fs + gray-matter 读，目录侧与章节页共用一条路径。同时记下三个坑：Turbopack 下插件必须写成字符串、YAML 裸日期会变 Date 对象、`mdx-components.tsx` 是 App Router 下的必需品。§五 清单更新两项状态（`app/_types/` 已启用、MDX 管道已集成但端到端未验）。见 [`logs/2026-08-06-reading-mdx-pipeline.md`](../logs/2026-08-06-reading-mdx-pipeline.md)。
 - **2026-08-05（二）**：**§3.8 推翻「字号用 clamp + vw」**（原正文与 §二 总览表的「rem + clamp」失效，追加节说明现行做法）。改为根字号按断点阶梯切换，理由是 vw 驱动根字号会剥夺浏览器字号控制权（无障碍回退）。同时确立**单位三层分工**：卡外 `rem`（断点阶梯）/ 卡内叠层 `cqw` / 固定视觉厚度 `rem` 不转 —— 第三层是本日新增的例外，来自 `CardBearu` RGB 分离偏移保留 `0.3rem` 的实测判定。另**新增 §3.10 TypeScript 约定**：禁显式 `any`，缺类型用 `unknown`；`useParallax` 的 `any` 掩盖真实空指针路径为实证。
 - **2026-08-05**：**§3.5 双库分工的判据细化**（不改原表，追加两节）。原表按「UI 级 vs 场景级」分，在 bearu 名片上卡住 —— 它是 UI 级弹窗组件，但入场要编排 4 组共 8 个节点的相对时间。判据改为按「要不要编排多元素相对时间 / 要不要拖时间轴调参」选 GSAP，按「要不要 exit 动画」选 Motion，**同组件内两库并存正常，边界在元素上**。同时把「一个元素的一个属性只能有一个主人」立为跨库红线（`transform` / `opacity` / `src` 三次实证）。本项目第一幕 GSAP timeline 同日落地（`BuildBearuIntro.ts`），见 [`notes/7.29-动画编排方案.md`](../notes/7.29-动画编排方案.md) §三。
 - **2026-07-02**：`gsap` + `@gsap/react` 落地首页 v1（`useParallax` 用 `gsap.quickTo` 做鼠标视差）；同期 Motion 落地首个实际用例——`AnimatePresence` 处理 `NameCard` 悬停显隐的进出场动画，`useMotionValue` + `useSpring` 驱动名字卡跟随鼠标位移。验证了"场景级 GSAP / UI 级 Motion"的分工判断。共享工具位置确定为 `app/_lib/`（`hitTest.ts` / `useAlphaMap.ts`），架构层面的 `app/_xxx/` 前缀约定同步落到 [`architecture.md`](./architecture.md)。
