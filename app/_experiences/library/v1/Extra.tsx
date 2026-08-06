@@ -26,10 +26,21 @@ const DEMO: Story[] = [
   { date: "2024.1", target: "#", title: "story5", id: "s5" },
 ];
 
-// 节点之间的角度间隔。默认把节点均匀铺满整圈（5 条 = 72°/个），
-// 只露右半圈的话同屏看得见 3 个。
-// 想让它们挤在右侧一小段弧里、更像"表盘边缘"，把这里改成固定值，比如 24。
-const STEP_DEG = 360 / DEMO.length;
+// 节点之间的角度间隔。两种模式，是**取舍**不是两全：
+//
+//   360 / DEMO.length —— 铺满整圈，首尾相接，能从最后一项继续往下滚回第一项
+//   固定值（如 24）   —— 挤在一小段弧里，更像"表盘边缘"，但变成有头有尾的
+//                        列表（像 iOS picker），没有循环
+//
+// ⚠️ 固定值模式下条目数有上限：24° 时超过 15 条就绕过 360°、节点开始重叠。
+// 真到那个量级要改成"只渲染 active 附近 ±k 个"。
+// const STEP_DEG = 360 / DEMO.length;
+const STEP_DEG = 24;
+
+// 节点是否恰好铺满整圈。只有铺满时首尾才相接，「往回转更近」才是一条
+// 真实存在的路（见下面 select 的注释）。改成固定 STEP_DEG 后节点变成一段
+// 圆弧，首尾不接，这里就是 false。
+const IS_FULL_CIRCLE = Math.abs(DEMO.length * STEP_DEG - 360) < 1e-6;
 
 export default function Extra() {
   const [active, setActive] = useState(0);
@@ -41,16 +52,27 @@ export default function Extra() {
 
   const current = DEMO[active];
 
-  // rot 是**累加**出来的，每次只加"从当前项到目标项的最短一步"。
+  // rot 是**累加**出来的，每次只加"从当前项到目标项的一步"。
   //
-  // 不能直接写 rot = -active * STEP_DEG：那样从第 0 项点到第 4 项时
-  // 角度从 0° 变成 -288°，整个环会倒着几乎转满一圈才到位 —— 而第 4 项
-  // 明明就在选中项斜上方一格，看着像转错了方向。
+  // 铺满整圈时不能直接写 rot = -active * STEP_DEG：那样从第 0 项点到第 4 项
+  // （共 5 项）角度会从 0° 变成 -288°，整个环倒着几乎转满一圈才到位 ——
+  // 而第 4 项明明就在选中项斜上方一格，看着像转错了方向。所以要折成最短路。
+  //
+  // 但**最短路只在铺满整圈时才存在**。节点挤成一段弧（STEP_DEG 写死）之后
+  // 首尾不相接，两点之间只有一条路，这时候折返会把节点甩到 n * STEP_DEG 处
+  // 而不是 0°，选中项就不在 3 点钟方向了。
+  //
+  // 保留累加写法（而不是在弧形分支里直接赋值）是为了让 STEP_DEG 改回
+  // 360 / DEMO.length 时绕圈手感自动回来，不用再动这个函数。
   const select = (i: number) => {
     const n = DEMO.length;
-    // 先折到 0 ~ n-1，再把超过半圈的那半折成负数（负 = 往回转更近）
-    let step = (((i - active) % n) + n) % n;
-    if (step > n / 2) step -= n;
+    let step = i - active;
+
+    if (IS_FULL_CIRCLE) {
+      // 先折到 0 ~ n-1，再把超过半圈的那半折成负数（负 = 往回转更近）
+      step = (((step % n) + n) % n);
+      if (step > n / 2) step -= n;
+    }
 
     setRot((r) => r - step * STEP_DEG);
     setActive(i);

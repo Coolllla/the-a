@@ -25,8 +25,8 @@
   min-height: 100dvh;
   overflow: hidden; // 环的左半圈在视口外，不裁会拽出横向滚动条
 
-  --ring-r: 38rem;
-  --ring-cx: 0px;
+  --ring-r: 18rem;
+  --ring-cx: -8rem;
 
   --art-x: 4rem;
   --art-w: 46rem;
@@ -144,14 +144,15 @@
 // .content 本身**不排版**，只是一块占住"环右边所有地方"的定位画布，
 // 让里面两个图层各自按自己的坐标钉住：插画垫底（.art），文字压在上面（.text）。
 //
-// left 跟着 --ring-r 走，改半径不用回来重调这里。
-// 之所以让 .content 而不是 .art / .text 各自去算 --ring-r：
-// 环的半径只在这一处出现，改一个值整块跟着走。
+// left 跟着环**实际露出来的右缘**走 —— 那个位置是 --ring-r + --ring-cx，
+// 不是光看 --ring-r（圆心往左缩时右缘也跟着缩，漏掉 cx 的话环和插画之间
+// 会凭空多出一段空隙）。所以这两个旋钮怎么调，右半边都紧跟着环。
+// 之所以让 .content 来算而不是 .art / .text 各自算：环的几何只在这一处出现。
 .content {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: calc(var(--ring-r) + var(--art-x));
+  left: calc(var(--ring-r) + var(--ring-cx) + var(--art-x));
   right: 0;
 
   // 切换时这一整块会重建（Extra.tsx 在它上面挂了 key），所以这条 animation
