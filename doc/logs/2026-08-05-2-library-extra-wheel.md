@@ -8,13 +8,18 @@
 
 ## 这个组件是什么
 
-番外页的形态。**注意它现在物理上住在 `app/_experiences/library/v1/` 下，而 [07-27 log 决策五的 07-28 变更](./2026-07-27-library-skeleton.md) 已经定了「番外整体移出藏书阁、单独做一个形态独特的页面」。** 所以：
+番外页的形态。它物理上住在 `app/_experiences/library/v1/` 下。
 
-- `LibraryV1.tsx` 现在是个**临时开发脚手架**：一个 `change` 按钮 + `useState` 在 `<Extra />` 和 `<Timeline />` 之间硬切，方便两边对照着调。它不是最终形态 —— Extra 搬走时这个按钮和 `"use client"` 都要撤掉
+> ⚠️ **本节以下两段的路由判断已被推翻**（08-04）。番外**留在 `/library` 同一路由**，靠 state 切视图。原文保留为过程记录，读时按已更正处理 —— 见 [「2026-08-06 后续」第一节](#一条要更正的番外不搬走了)。
+
+当时的理解是：[07-27 log 决策五的 07-28 变更](./2026-07-27-library-skeleton.md) 已经定了「番外整体移出藏书阁、单独做一个形态独特的页面」。所以：
+
+- ~~`LibraryV1.tsx` 现在是个**临时开发脚手架**：一个 `change` 按钮 + `useState` 在 `<Extra />` 和 `<Timeline />` 之间硬切，方便两边对照着调。它不是最终形态 —— Extra 搬走时这个按钮和 `"use client"` 都要撤掉~~（**已作废**：那个 `change` 按钮是正式承载，鸽群转场就挂在它上面）
 - 时间轴那一整套（`Timeline` + `Chapter` + Lenis 横向滚）没删，按钮切过去就能看
 - `MeChapter`（用户自己写的那版节点组件）**暂时废弃**，不用管。07-27 log 决策十五说的"两个节点组件并存、接手时先确认 Timeline import 的是哪个"仍然有效，答案是 `Chapter`
 
-> 如果这个"番外独立页"的决定变了（比如决定就留在 library 里），要回到 07-27 log 补一条变更，别让两份文档打架。
+> ~~如果这个"番外独立页"的决定变了（比如决定就留在 library 里），要回到 07-27 log 补一条变更，别让两份文档打架。~~
+> **✅ 已办**（08-06）：决定确实变了，07-27 log 决策五已补「2026-08-04 再变更」。两份文档不打架了。
 
 ## 几何：环不转，是每个节点各自带角度
 
@@ -34,6 +39,8 @@ rotate(--a) → translateX(--ring-r) → rotate(calc(-1 * --a)) → translate(-5
 两个旋钮：`--ring-r`（半径，38rem）、`--ring-cx`（圆心横向偏移，负值 = 更多藏到左边外面）。`.content` 的 `left` 跟着**环实际露出来的右缘**走 —— `calc(var(--ring-r) + var(--ring-cx) + var(--art-x))`，两个旋钮怎么调，右半边都紧跟着环。（这个公式起初只算了 `--ring-r`，08-06 补上了 `--ring-cx`，见文末。）
 
 `STEP_DEG = 360 / 条数`：5 条 = 72°/个，静止时角度是 0 / 72 / 144 / 216 / 288，其中 144 和 216 的 x 坐标为负（在视口外），所以**同屏看得见 3 个**。想让节点挤在右侧一小段弧里、更像"表盘边缘"，把 `STEP_DEG` 改成固定值（比如 24）。
+
+> ⚠️ **现役值已经是固定的 `24`**，不再是 `360 / 条数`。改这个常量会连带影响最短路折返的正确性，动手前先读文末「`STEP_DEG` 改固定值把最短路的前提抽掉了」。
 
 ## 断点在哪（`中断` commit 的确切位置）
 
@@ -146,20 +153,21 @@ Module not found: Can't resolve './buildBearuIntro'
 - **文字压在插画上之后的可读性没处理。** 现在 `--art-opacity: 1`，真插画进来后文字大概会糊在图上。三条路：调低 `--art-opacity`、给 `.text` 垫一层 scrim（渐变遮罩）、或者把插画本身设计成右侧留白。没有猜，等真图
 - **键盘只能靠 Tab。** 现在 `onFocus` 会带着环转过来（免得焦点停在看不见的节点上），但**没有方向键支持** —— 转盘这种形态按左右/上下键切换是很自然的期待，加起来大概八行。故意没加，因为不在"修坏掉的部分"这个范围内
 - **接 GSAP 时要删两处 CSS**：`.node` 的 `transition: transform`（那条就是"转盘转动"本身）和 `.content` 的 `animation`。别让 CSS 和 GSAP 同时写同一个属性
-- 演示数据还在 `Extra.tsx` 里内联，5 条日期全是 `2024.1`。真实数据进来时按 `Story` 类型走，考虑抽去 `app/_data/`（和 Timeline 的 `data.ts` 分开 —— 两者形状不同）
+- ~~演示数据还在 `Extra.tsx` 里内联，5 条日期全是 `2024.1`。真实数据进来时按 `Story` 类型走，考虑抽去 `app/_data/`~~ **✅ 已办**（用户做的）：数据搬到 `app/_data/library/data.ts`，导出名 `EXTRA_DATA`，`Story` 类型跟着搬过去并加了 `wip?: boolean`。Timeline 的 `data.ts` 仍在 `library/v1/` 内（两者形状不同，刻意没合）
 - `target` 全是 `"#"`，等 `(reading)` 章节路由就位后接上
 - **响应式完全没做。** 按项目约定（`Extra.module.scss` 顶部注释）窄屏靠断点换根字号整体缩，不在组件里写媒体查询。但环压在左边缘 + 右边内容这个布局在窄屏上大概需要另一种形态，不是缩一缩能解决的
 
 **结构性的：**
 
-- Extra 搬去自己的路由（决策已定，见上面"这个组件是什么"）；搬走时把 `LibraryV1` 里的 `change` 按钮、`useState`、`"use client"` 一并撤掉
+- ~~Extra 搬去自己的路由；搬走时把 `LibraryV1` 里的 `change` 按钮、`useState`、`"use client"` 一并撤掉~~ **← 这条作废**，08-04 已决定番外留在 `/library` 同一路由，`change` 按钮是正式承载而非脚手架。见下面「2026-08-06 后续」第一节
+- 取而代之的是**鸽群遮罩转场**（点击切换时鸽群飞过遮屏、幕下换视图）。方案已成型但一行代码没写，见 [notes/8.6-鸽群遮罩转场方案](../notes/8.6-鸽群遮罩转场方案.md)
 - 时间轴那边挂起的进度见 [07-27 log 决策十一～十七](./2026-07-27-library-skeleton.md)（`LAYOUT: "time" | "even"` 开关、`ym()` 真小数年、Lenis 横向平滑滚动）。`MeChapter` 已废弃，那条"两个节点组件并存"的提醒可以当历史看
 
 ---
 
 ## 2026-08-06 后续
 
-同一条线的下一个会话补的，三件事。
+同一条线的后续会话陆续补的。前四节是文档对齐与验证，最后一节是新踩的坑。
 
 ### 一条要更正的：番外不搬走了
 
@@ -191,5 +199,95 @@ Module not found: Can't resolve './buildBearuIntro'
 
 顺带两个视觉观察，都等用户定：
 
-- `--ring-cx` 调负之后，**72° 间隔太散的问题更明显了** —— ±72° 那两个节点现在几乎贴到视口左边缘，标签只剩一半。`STEP_DEG` 改成 `24` 或 `30` 会把节点聚到 3 点钟附近成一段弧
-- 插画层和文字层**目前仍然没有重叠**（本 log「留给下一次的接力」第一条已经指出过），`--ring-cx` 左移之后间隙从 80px 变成 80px 不变（文字靠右边缘钉住，不受影响）
+- `--ring-cx` 调负之后，**72° 间隔太散的问题更明显了** —— ±72° 那两个节点现在几乎贴到视口左边缘，标签只剩一半。`STEP_DEG` 改成 `24` 或 `30` 会把节点聚到 3 点钟附近成一段弧。**用户随后就改成了 24，并踩到一个坑**，见下面「`STEP_DEG` 改固定值把最短路的前提抽掉了」
+- 插画层和文字层**目前仍然没有重叠**（本 log「留给下一次的接力」第一条已经指出过）。`--ring-cx` 左移 80px 之后间隙反而**从 80px 张到 160px**：插画层跟着环左移了，而文字层靠视口右缘钉住、原地不动。想让两层重叠得靠调 `--art-w`，左移圆心只会把它们拉得更开
+
+### `STEP_DEG` 改固定值把最短路的前提抽掉了（已修）
+
+用户按上面那条建议把 `STEP_DEG` 改成了 `24`，结果**选中项不在 3 点钟方向了**。
+
+根因不在角度值，在 `select` 里那个最短路折返：
+
+```tsx
+let step = (((i - active) % n) + n) % n;
+if (step > n / 2) step -= n;   // ← 往回转更近
+```
+
+「往回转更近」成立的前提是**节点铺满整圈、首尾相接**。`STEP_DEG = 360 / n` 时 `n * STEP_DEG === 360°`，往回绕 n 步等于绕整圈回到原地，折返不改变落位。改成固定 24° 后 5 个节点只占 `4 × 24 = 96°` 的一段**弧**，首尾不接了 —— 从第 0 项到第 4 项根本没有"往回"这条路，但代码还在折。
+
+被折返的项会整齐地落在 `n * STEP_DEG` 处，而不是 0°：
+
+```
+落位 = i × STEP_DEG + rot = i × STEP_DEG − (i − n) × STEP_DEG = n × STEP_DEG
+```
+
+整圈时 `n × STEP_DEG = 360° ≡ 0°`，正好还是 3 点钟 —— **所以这个 bug 一直被「铺满整圈」这个前提兜着，改一个看起来无关的常量就暴露了**。
+
+修法是给折返加前提判断：
+
+```tsx
+const IS_FULL_CIRCLE = Math.abs(EXTRA_DATA.length * STEP_DEG - 360) < 1e-6;
+
+const select = (i: number) => {
+  const n = EXTRA_DATA.length;
+  let step = i - active;
+  if (IS_FULL_CIRCLE) {
+    step = (((step % n) + n) % n);
+    if (step > n / 2) step -= n;
+  }
+  setRot((r) => r - step * STEP_DEG);
+  setActive(i);
+};
+```
+
+保留累加写法（而不是在弧形分支里直接 `rot = -i * STEP_DEG`）是为了让 `STEP_DEG` 改回 `360 / EXTRA_DATA.length` 时绕圈手感自动回来，不用再动这个函数。两种写法在弧形下等价。
+
+**弧形模式不需要穷举验证，可以直接归纳证明**：不变式是 `active × STEP_DEG + rot ≡ 0`（选中项在 0°）。初始 `active = 0, rot = 0` 满足；每次 `rot -= (i − active) × STEP_DEG` 之后 `i × STEP_DEG + rot_new = active × STEP_DEG + rot = 0`，不变式保持。所以选中项恒在 3 点钟。
+
+**教训**：这类几何代码里的"优化"往往悄悄依赖某个隐含前提（这里是"铺满整圈"）。前提写在别处（一个常量的默认值里）、断掉时又不报错，只表现为视觉错位。把前提**显式写成一个命名布尔量**（`IS_FULL_CIRCLE`）比写在注释里可靠 —— 至少改常量的人能搜到它。
+
+### 两种排布模式是取舍，不是两全
+
+`STEP_DEG` 的两种取值给出两种不同形态，选一个：
+
+| 取值 | 形态 | 循环手感 |
+|---|---|---|
+| `360 / EXTRA_DATA.length` | 节点铺满整圈 | ✅ 能从最后一项继续往下滚回第一项 |
+| 固定值（如 `24`） | 挤在右侧一小段弧，像"表盘边缘" | ❌ 有头有尾的列表（类似 iOS picker） |
+
+⚠️ **固定值模式下条目数有上限**：24° 时超过 15 条就绕过 360°、节点开始重叠。番外真长到那个量级要改成"只渲染 active 附近 ±k 个"。目前 5 条，不用管。
+
+### 数据层归位（按 AGENTS.md 约定重构）
+
+洁癖检查发现两处实现偏离了 `AGENTS.md` 的结构约定，用户确认"是我忘记了，还是按约定来"，于是：
+
+| 改动 | 之前 | 现在 |
+|---|---|---|
+| `Story` 类型的位置 | 内联在 `app/_data/library/data.ts` | `app/_types/library.ts`（新建，域级类型文件的第一个实例） |
+| `Extra` 拿数据的方式 | 自己 `import { EXTRA_DATA }` | 吃 `stories: Story[]` props |
+| 数据注入点 | 无 | `LibraryV1`（本版本的装配者） |
+
+**注入点为什么是 `LibraryV1` 而不是 `page.tsx`**：`app/(standard)/library/page.tsx` 是 `export default LibraryCurrent` 的薄壳，注释明确要求"版本升级时本文件不动"。不同版本要的数据形状可能不同，把注入放路由层会让版本细节漏上去。所以约定的准确表述是**叶子组件**（`Extra` / `Timeline` / `Chapter`）吃 props，**版本顶层**负责装配 —— 总得有人 import，那个人是 `LibraryV1`。
+
+一个连带改动值得注意：`IS_FULL_CIRCLE` 原来是模块级常量（读 `EXTRA_DATA.length`），条数改从 props 来之后**它必须移进组件体内**算，并改名成 `isFullCircle`（局部值用 camelCase）。这类"模块级常量依赖模块级数据"的耦合，在把数据改成 props 时都会浮出来。
+
+⚠️ **`Timeline` 还没跟上**：它仍然自己 `import { DEMO } from "./data"`，数据也还在 `library/v1/data.ts`（版本内）而不是 `app/_data/`。那批是占位数据、形状未定稿，刻意先不动。定稿时一起搬。
+
+验证：`pnpm tsc --noEmit` 干净、`pnpm lint` 0 error / 3 warning（全是 `home/v1` 既有）、`pnpm build` 通过且 `/library` 仍是 `○` 静态。
+
+### 节点的四层职责（改样式前必读）
+
+用户要自己调节点的样式和内容，这里记一下分层，免得下次又推一遍：
+
+```
+<li .node>        ← 几何层：环上的定位
+  <button .hit>   ← 外观容器 + 可点区域
+    <span .dot>   ← 装饰圆点（aria-hidden）
+    <span .date>  ← 日期文字
+```
+
+- **`.node` 上不能写 `transform`**。那条 transform 是环的定位，写 `scale()` 会整条覆盖掉、节点直接飞到圆心。要做"选中时整个节点放大"得写在 `.hit` 上。同理 `.node` 的 `transition: transform` 别动 —— 那是转盘转动本身
+- **`.node` transform 的末段 `translate(-50%, -50%)` 是可调的**（这是唯一能动的部分）：现在标签中心跨在环线上，改 `translate(0, -50%)` 让标签整体到环外侧，`translate(-100%, -50%)` 到环内侧
+- 背景 / 边框 / padding / `gap` 都写 `.hit`；`.hit` 的 `white-space: nowrap` 是故意的（环上标签折行很丑）
+- `.dot` 和 `.date` 各自带 `transition`，选中态是渐变的 —— 改成用 `scale` 放大圆点时记得把 `transition` 里的 `width/height` 换成 `transform`
+- ⚠️ 加新 span 时**必须同步在 SCSS 里定义类名**：`styles.whatever` 在 TS 里永远合法（CSS Modules 是宽松索引签名），漏了就渲染成 `class="undefined"`，**tsc / lint / build 全都不报错**。这个坑本 log 上半部分已经踩过一次

@@ -1,14 +1,5 @@
-type Story = {
-  id: string;
-  /** 给人看的日期，随便写什么都行，不参与计算 */
-  date: string;
-  title: string;
-  /** 章节路由。等 (reading) 分组就位后接上，现在全是 "#" */
-  target: string;
-  /** 插画路径。资源未就位 —— 缺省时 .art 渲染成占位框 */
-  art?: string;
-  wip?: boolean;
-};
+// 番外条目数据。类型在 app/_types/library.ts（位置约定见 AGENTS.md）。
+import type { Story } from "@/app/_types/library";
 
 const EXTRA_DATA: Story[] = [
   { date: "2022.1", title: "元旦", id: "new year", target: "#", art: "" },
