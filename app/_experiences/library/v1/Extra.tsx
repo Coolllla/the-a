@@ -3,28 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import styles from "./Extra.module.scss";
+import { EXTRA_DATA } from "@/app/_data/library/data";
 
 // 番外条目。番外按现实历法产出，在世界内时间上没有正当位置，
-// 所以这里只有 date 一个人类可读的日期串，不像时间轴那边要算真小数年。
-type Story = {
-  id: string;
-  /** 给人看的日期，随便写什么都行，不参与计算 */
-  date: string;
-  title: string;
-  /** 章节路由。等 (reading) 分组就位后接上，现在全是 "#" */
-  target: string;
-  /** 插画路径。资源未就位 —— 缺省时 .art 渲染成占位框 */
-  art?: string;
-};
-
-// 临时演示数据，接真实数据时整段删掉。
-const DEMO: Story[] = [
-  { date: "2024.1", target: "#", title: "story1", id: "s1" },
-  { date: "2024.1", target: "#", title: "story2", id: "s2" },
-  { date: "2024.1", target: "#", title: "story3", id: "s3" },
-  { date: "2024.1", target: "#", title: "story4", id: "s4" },
-  { date: "2024.1", target: "#", title: "story5", id: "s5" },
-];
 
 // 节点之间的角度间隔。两种模式，是**取舍**不是两全：
 //
@@ -40,7 +21,7 @@ const STEP_DEG = 24;
 // 节点是否恰好铺满整圈。只有铺满时首尾才相接，「往回转更近」才是一条
 // 真实存在的路（见下面 select 的注释）。改成固定 STEP_DEG 后节点变成一段
 // 圆弧，首尾不接，这里就是 false。
-const IS_FULL_CIRCLE = Math.abs(DEMO.length * STEP_DEG - 360) < 1e-6;
+const IS_FULL_CIRCLE = Math.abs(EXTRA_DATA.length * STEP_DEG - 360) < 1e-6;
 
 export default function Extra() {
   const [active, setActive] = useState(0);
@@ -50,7 +31,7 @@ export default function Extra() {
   // 所以它们永远一起转，不会各转各的。选中项满足 active * STEP_DEG + rot ≡ 0°。
   const [rot, setRot] = useState(0);
 
-  const current = DEMO[active];
+  const current = EXTRA_DATA[active];
 
   // rot 是**累加**出来的，每次只加"从当前项到目标项的一步"。
   //
@@ -65,12 +46,12 @@ export default function Extra() {
   // 保留累加写法（而不是在弧形分支里直接赋值）是为了让 STEP_DEG 改回
   // 360 / DEMO.length 时绕圈手感自动回来，不用再动这个函数。
   const select = (i: number) => {
-    const n = DEMO.length;
+    const n = EXTRA_DATA.length;
     let step = i - active;
 
     if (IS_FULL_CIRCLE) {
       // 先折到 0 ~ n-1，再把超过半圈的那半折成负数（负 = 往回转更近）
-      step = (((step % n) + n) % n);
+      step = ((step % n) + n) % n;
       if (step > n / 2) step -= n;
     }
 
@@ -83,7 +64,7 @@ export default function Extra() {
       {/* 节点环：圆心压在视口左边缘中点上，只露出右半圈 */}
       <div className={styles.ring}>
         <ul className={styles.nodes}>
-          {DEMO.map((d, i) => (
+          {EXTRA_DATA.map((d, i) => (
             <li
               key={d.id}
               className={`${styles.node} ${i === active ? styles.active : ""}`}
@@ -104,7 +85,7 @@ export default function Extra() {
                 // 否则焦点会停在看不见的地方
                 onFocus={() => select(i)}
               >
-                <span className={styles.dot} aria-hidden="true" />
+                {/* <span className={styles.dot} aria-hidden="true" /> */}
                 <span className={styles.date}>{d.date}</span>
               </button>
             </li>
@@ -119,7 +100,9 @@ export default function Extra() {
       <div className={styles.content} key={current.id}>
         <div className={styles.text}>
           <p className={styles.contentDate}>{current.date}</p>
-          <h2 className={styles.contentTitle}>{current.title}</h2>
+          <h2 className={styles.contentTitle} data-id={current.id}>
+            {current.title}
+          </h2>
           <Link href={current.target} className={styles.enter}>
             阅读
           </Link>

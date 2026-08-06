@@ -28,7 +28,7 @@
   --ring-r: 18rem;
   --ring-cx: -8rem;
 
-  --art-x: 4rem;
+  --art-x: 12rem;
   --art-w: 46rem;
   --art-opacity: 1;
 
@@ -55,7 +55,7 @@
   pointer-events: none;
 
   // 环上那圈线。不想要就把这两行删掉，节点照样排得对
-  border: 1px solid var(--line-light);
+  // border: 1px solid var(--line-light);
   border-radius: 50%;
 }
 
@@ -117,10 +117,13 @@
 }
 
 .date {
-  font-family: var(--font-caveat), cursive;
+  font-family: var(--font-anton-sc), var(--font-caveat), cursive;
   font-size: 1.5rem;
   line-height: 1;
-  transition: font-size 0.3s ease;
+  transition:
+    font-size 0.3s ease,
+    opacity 0.3s ease;
+  opacity: 0.3;
 }
 
 .active {
@@ -135,7 +138,8 @@
   }
 
   .date {
-    font-size: 2.2rem;
+    opacity: 1;
+    font-size: 2.8rem;
   }
 }
 

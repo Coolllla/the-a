@@ -7,7 +7,14 @@ import {
   Open_Sans,
   Noto_Serif_SC,
   Covered_By_Your_Grace,
+  Anton_SC,
 } from "next/font/google";
+
+export const antonSC = Anton_SC({
+  variable: "--font-anton-sc",
+  subsets: ["latin"],
+  weight: "400",
+});
 
 export const roxboroughCFLight = localFont({
   src: "./_assets/fonts/RoxboroughCF-Light.otf",

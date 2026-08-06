@@ -8,6 +8,7 @@ import {
   pixelFont,
   coverByYourGrace,
   roxboroughCFLight,
+  antonSC,
 } from "./fonts";
 import "./globals.scss";
 
@@ -25,6 +26,7 @@ const fonts = [
   pixelFont,
   coverByYourGrace,
   roxboroughCFLight,
+  antonSC,
 ];
 
 const fontVariables = fonts.map((font) => font.variable).join(" ");
