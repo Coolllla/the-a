@@ -1,0 +1,11 @@
+# 番外正文目录（content/extras/）
+#
+# 目前空着 —— 番外的清单已经在 app/_data/library/data.ts 的 EXTRA_DATA 里
+# （7 条真数据），但正文一篇都还没写。
+#
+# 文件名 = slug，形状 `<序号>-<描述词>`，例如 01-new-year.mdx。
+# slug 必须与 EXTRA_DATA 里对应条目的 target（/extras/<slug>）一致 ——
+# 这个对应关系目前没有构建期校验，填错就是静默的坏链。
+#
+# 这个文件的唯一作用是让空目录能进 git（否则 listSlugs 会打 warning）。
+# 第一篇番外落地后可以删掉它。

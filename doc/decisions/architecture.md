@@ -53,9 +53,13 @@ app/
 │
 ├── (reading)/                 # 阅读区路由分组——窄栏、不加载重动画库
 │   │                          #   ⚠️ 与 (standard) 平级，不嵌套在它内部（见 §八 08-06 条）
+│   │                          #   正文不在 app/ 内 —— 在仓库根 content/{chapters,extras}/
 │   ├── layout.tsx             # <Nav />（走 DEFAULTS，那套默认值本就是按阅读态给的）
-│   ├── chapters/[slug]/page.tsx
-│   └── archive/page.tsx
+│   ├── chapters/[slug]/page.tsx  # 薄壳：路由 API + 动态 import content/chapters/<slug>.mdx
+│   ├── extras/[slug]/page.tsx    # 番外   ⏳ 未建
+│   └── archive/page.tsx          # 归档旧版页面   ⏳ 未建
+│                              #   注意没有 chapters/page.tsx —— 目录由 /library 承担
+│                              #   （Timeline = 主线、Extra = 番外），见 §八 08-06 条
 │
 ├── _shell/                    # 外壳层的实现（跨全站、不随版本变）
 │   └── Nav/                   # 全站导航（由分组 layout 挂载，见 §三·路由分组）
@@ -77,7 +81,8 @@ app/
 │   │   └── current.ts
 │   └── ... 其他可版本化页面
 │
-├── _data/                     # 数据层：结构化世界观数据，按域分子目录   ⏳ 未建
+├── _data/                     # 数据层：结构化世界观数据，按域分子目录
+│   └── library/data.ts        #   番外清单 EXTRA_DATA（真数据，target 待接）
 │
 ├── _assets/                   # 跨版本共享的内容资产（详见 asset-organization.md）   ⏳ 未建
 │   ├── characters/
@@ -87,12 +92,17 @@ app/
 ├── _lib/                      # 跨组件复用的工具与 hook（无 UI）
 │   ├── hitTest.ts             # 透明像素级 hit test
 │   ├── useAlphaMap.ts         # 图片 alpha 通道位图构建
+│   ├── content.ts             # content/ 目录的共用底层（fs + frontmatter，server only）
+│   ├── chapters.ts            # 主线章节元数据
+│   ├── extras.ts              # 番外元数据
 │   └── ...
 │
 ├── _components/               # 跨页面复用的展示组件（有 UI，纯展示）   ⏳ 未建
 │   └── ...
 │
-└── _types/                    # 共享类型定义   ⏳ 未建
+└── _types/                    # 共享类型定义
+    ├── library.ts             #   Story（番外条目）
+    └── chapter.ts             #   BaseMeta / ChapterMeta / ExtraMeta（正文 frontmatter 的形状）
 ```
 
 > ⏳ 标记的目录是**规划位置，尚未创建**——等第一个真实需求出现时再建，不预建占位（见 §六）。
@@ -107,8 +117,8 @@ Next.js App Router 中 `app/` 下以 `_` 开头的目录**不参与路由**（�
 | `_shell/` | 外壳层实现（导航等全站部件） | 已启用（`Nav/`） |
 | `_experiences/` | 各页面的版本实现（会随版本更新） | 已启用（`home/`、`library/`） |
 | `_lib/` | 无 UI 的工具函数与 hook | 已启用 |
-| `_data/` | 数据层：结构化世界观数据，按域分子目录 | 未建 |
-| `_types/` | 共享 TypeScript 类型 | 未建 |
+| `_data/` | 数据层：结构化世界观数据，按域分子目录 | 已启用（`library/data.ts` = 番外清单 `EXTRA_DATA`）|
+| `_types/` | 共享 TypeScript 类型 | 已启用（`library.ts`、`chapter.ts`）|
 | `_assets/` | 跨版本共享的内容资产 | 未建（尚无跨版本共享需求，资产先放 `v<N>/assets/`） |
 | `_components/` | 有 UI 的共享展示组件 | 未建 |
 
@@ -216,6 +226,7 @@ export { default } from './v1/HomeV1'
 
 ## 八、决策变更日志
 
+- **2026-08-07**：**正文内容按域分成 `content/chapters/` 与 `content/extras/` 两个子目录**（前一天只规划了 `content/`，没分域）。理由是主线与番外混在一处会出三个问题：`chapter` 序号打架、上下篇导航串台（从主线第 3 章翻到《元旦》）、frontmatter 形状本就不同（主线要世界内时间，番外「在世界内时间上没有正当位置」但有 `art`/`wip`）。**用文件系统表达分类，比在 frontmatter 加 `kind` 字段再运行时过滤简单且不会漏。** 连带确定：① 主线 frontmatter 新增世界内时间字段（`storyYear` 必填），因为 Timeline 的数据源就是章节文件，而原有的 `date` 是现实的写作日期，两者不是一回事；② **番外的顺序真源是 `_data/library/data.ts` 的 `EXTRA_DATA`**，正文文件不带任何序号字段，否则就是第二个真源；③ 长番外拆成并列的独立文件（标题写「（上）/（中）」），**不做层级**。同时 `_lib/` 新增 `content.ts`（共用底层）+ `chapters.ts` / `extras.ts` 两个域，且**`_lib/` 不换算真小数年** —— `ym()` 在 `_experiences/library/v1/time.ts`，让 `_lib/` 反向依赖 `_experiences/` 是坏结构，换算留在 Timeline 那侧。目录图与 `_xxx` 表同步补上 `_data/` `_types/` 的实际内容（此前误标"未建"）。见 [`logs/2026-08-06-reading-mdx-pipeline.md`](../logs/2026-08-06-reading-mdx-pipeline.md) §八。
 - **2026-08-06**：**`(reading)` 分组落地，并推翻 §三 末尾"嵌套在 `(standard)` 内"的规划**——改为与 `(immersive)` / `(standard)` **平级**。理由：那句规划写在「Nav 挂进分组 layout」（2026-07-28）之前，嵌套时父 layout 已渲染 `<Nav />`，子 layout 要覆盖姿态就得再渲染一个，页面上会挂两个 Nav。结论是**在 Nav 这条轴上"两条不重合的轴"其实是一条**：一个页面只能属于一个 Nav 姿态分组；`(reading)` 存在的实质理由（不加载重动画库的打包差异）在平级时完全成立，不损失任何东西。同时定下三件与本节相关的事：① **内容真源放仓库根 `content/`**，不进 `app/`（写作编辑器要 `Cmd+S` 直写它，路径必须浅且永不移动；且 slug 是数据而非文件系统路由）——这是 `.mdx` "不进 `_data/`" 之外的位置补全；② **章节页用 `[slug]` 动态 import**，不让 `.mdx` 当路由文件；③ **不做 `/chapters` 目录页**，`/library` 就是目录（Timeline = 主线、Extra = 番外），`getAllChapters()` 的消费者是上下章导航与阅读页内的目录抽屉组件，不是页面。三层模型与版本化机制本身未变。见 [`logs/2026-08-06-reading-mdx-pipeline.md`](../logs/2026-08-06-reading-mdx-pipeline.md)。
 - **2026-08-04**：目录图补上藏书阁 v1 的实际文件（`Timeline.tsx` / `Chapter.tsx` / `data.ts`）。两点值得记：① **体验层组件可以是 client component**——`Timeline` 为了把竖向滚轮转成横向滚动带了 `"use client"`，三层模型不要求体验层全是 Server Component；② `v1/data.ts` 是**临时演示数据**，放在体验层内属于故意的例外，真数据仍按 §三 的约定去 `_data/library/`，接手时不要把它当成数据层已落地。机制本身未变。见 [`logs/2026-07-27-library-skeleton.md`](../logs/2026-07-27-library-skeleton.md) §十二~十四。
 - **2026-07-28**：**撤回 2026-07-27 那条"数据层已落地"**。`_data/library/` 与 `_types/library.ts` 已删除，`_data/` `_types/` 回到"规划位置、未建"状态。原因不是方案有问题，而是那套 schema 与占位数据由 AI 代拟，用户读了之后判断"不是自己一步步搭起来的，会晕掉这些是干什么的"——藏书阁改由用户自己搭，AI 转为辅助。位置约定（`_data/<域>/` + `_types/<域>.ts`）保留为约定。同时 `_experiences/library/v1/` 下的十余个占位组件也一并删除，只留 `LibraryV1.tsx` 空页面。

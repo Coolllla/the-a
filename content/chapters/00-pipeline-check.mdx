@@ -3,11 +3,18 @@ title: 管道自检
 slug: 00-pipeline-check
 chapter: 0
 # 故意不加引号 —— YAML 会把它解析成 Date 对象而不是字符串，
-# 正好验证 app/_lib/chapters.ts 里那段 Date 兜底走通了。
+# 正好验证 app/_lib/content.ts 里那段 Date 兜底走通了。
 # 想要"约 2029 年冬"这类自由写法就加引号：date: "约 2029 年冬"
 date: 2026-08-06
 wordCount: 380
 status: draft
+# 以下是【世界内时间】—— 故事发生在什么时候，与上面的 date（现实的写作日期）
+# 是两回事。storyYear 是主线必填项，Timeline 靠 ym(storyYear, storyMonth)
+# 算横向位置。这里的值是编的，只为验证解析路径。
+storyYear: 2023
+storyMonth: 3
+storyApprox: true   # 时间不确定 → 轴上圈与引线转虚线、日期前缀「约」
+branch: true        # 支线 → 节点挂轴下方（映射到 Chapter.tsx 的 side prop）
 ---
 
 ## 这个文件是什么
@@ -18,6 +25,9 @@ status: draft
 
 真正写第一章的时候，把这个文件删掉即可 —— `chapter: 0` 也是特意占位的，
 不会跟正式章节的序号撞上。
+
+⚠️ **给 Timeline 接线之前一定要删掉它**：`getAllChapters()` 会把它当成一个真章节
+返回，`chapter: 0` 让它排在最前，`storyYear: 2023` 会让它在轴上占一个位置。
 
 ## 它顺便是块排版试验田
 

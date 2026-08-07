@@ -1,7 +1,9 @@
 # 2026-08-06 阅读区开工：MDX 管道落地 + 架构决策
 
-> 交接文档。接手的 agent 读完这一篇 + `doc/notes/7.27-mdx编辑器调研.md` 即可继续，不需要回溯对话。
-> 状态：**管道层已落地并通过 build，页面层尚未开始**。有一批已议定但未落地的改动，见 §五。
+> 交接文档，阅读区的单一入口。接手的 agent 读完这一篇 + `doc/notes/7.27-mdx编辑器调研.md` 即可继续，不需要回溯对话。
+>
+> **2026-08-07 续做过一轮**（§五A 的清单已全部落地、端到端已验证），本文正文已同步更新，增量记录见 §八。
+> 当前状态：**管道层完整、端到端已跑通；排版与体验层仍未开始**（那是用户的地盘，见 §五B）。
 
 ## 一、背景
 
@@ -15,13 +17,18 @@
 |---|---|
 | `next.config.ts` | `withMDX()` + `pageExtensions` + 字符串形式的 `remark-frontmatter` |
 | `mdx-components.tsx` | 项目根。**有意留空**，理由与后续挂载点写在文件内注释 |
-| `app/_lib/chapters.ts` | `getChapterSlugs` / `getChapter` / `getAllChapters` / `getNeighbors`，fs + gray-matter 读 frontmatter |
-| `app/_types/chapter.ts` | `ChapterMeta` / `ChapterNeighbors` |
-| `content/chapters/00-pipeline-check.mdx` | 管道自检件，**随时可删**。`chapter: 0` 特意占位不撞正式章号。顺带是块排版试验田（标题/引用/分隔线/长段落齐全） |
+| `app/_lib/content.ts` | **共用底层**：`ContentDir` / `SLUG_RE` / `fail` / `listSlugs` / `readBaseMeta`。目录扫描、slug 校验、gray-matter 解析、共有字段收窄都在这 |
+| `app/_lib/chapters.ts` | 主线域：`getChapterSlugs` / `getChapter` / `getAllChapters` / `getChapterNeighbors` |
+| `app/_lib/extras.ts` | 番外域：只有 `getExtraSlugs` / `getExtra`。**故意不提供排序与 neighbors**，理由见文件内注释与 §五A.1 |
+| `app/_types/chapter.ts` | `BaseMeta` / `ChapterMeta` / `ExtraMeta` / `Neighbors<T>` |
+| `content/chapters/00-pipeline-check.mdx` | 管道自检件，**随时可删**。`chapter: 0` 特意占位不撞正式章号。顺带是块排版试验田（标题/引用/分隔线/长段落齐全）。⚠️ 给 Timeline 接线前务必删掉——它会被 `getAllChapters()` 当成真章节返回并在轴上占位 |
+| `content/extras/.gitkeep` | 让空目录进 git，避免 `listSlugs` 打 warning。第一篇番外落地后可删 |
+| `app/(reading)/layout.tsx` | 挂 `<Nav />`（不传 props，DEFAULTS 本就是按阅读态给的） |
+| `app/(reading)/chapters/[slug]/page.tsx` | 章节页薄壳**参考稿**：路由 API + 动态 import + 裸渲染，**无任何排版** |
 
 新增依赖：`@next/mdx` `@mdx-js/loader` `@mdx-js/react` `gray-matter` `remark-frontmatter` + dev `@types/mdx`。
 
-用户另建了 `app/(reading)/layout.tsx`、`chapters/page.tsx`、`chapters/[slug]/page.tsx` —— **三个都还是空文件**（空 `page.tsx` 会让 dev 报 "default export is not a React Component"）。
+> `app/(reading)/chapters/page.tsx`（目录页）**已按决策 7 删除**。它曾是个空文件，而三个空 `page.tsx` 让整个仓库 `tsc` 报 `TS2306: is not a module` —— 接手时若又见到空的 page 文件，先想到这条。
 
 ### 验证状态
 
@@ -32,7 +39,14 @@
 - **YAML 会把不加引号的 `date: 2026-08-06` 解析成 Date 对象**，实测输出 `2026-08-06T00:00:00.000Z`。这与本项目 `date` 的语义（给人看的串、不参与计算）冲突，`chapters.ts` 已兜住（Date → 取 ISO 日期部分）。**这条也是编辑器导出器要知道的**。
 - `remark-frontmatter` 确实生效：不带插件时 `title:` 会被渲进正文，带上就消失。
 
-⚠️ **没验成的一环**：MDX 端到端渲染。没有任何页面 `import` 那个 `.mdx`，所以 build 根本没走 MDX loader。Turbopack 下字符串插件配置在真实 loader 里生效这条，目前只有官方文档依据（`node_modules/next/dist/docs/01-app/02-guides/mdx.md` § Using Plugins with Turbopack）。**页面一填上就能验，接手时请第一时间跑一次。**
+✅ **端到端已于 2026-08-07 验证通过**（08-06 当天没验成，因为还没有页面 `import` 过 `.mdx`，build 根本没走 MDX loader）。填上薄壳后的实测结果：
+
+- `pnpm build` 输出 `● /chapters/[slug]` → `/chapters/00-pipeline-check`，SSG 预渲染成功
+- 预渲染的 HTML 里 `<title>管道自检</title>` —— `generateMetadata` 走通
+- **frontmatter 零泄漏**：逐个 grep `wordCount` / `draftId` / `status: draft` / `storyMonth` / `slug: 00-pipeline-check`，全部 0 命中。也就是 Turbopack 下**字符串形式的插件配置确实生效**（这条此前只有官方文档依据）
+- 正文结构元素齐全：2 × `<h2>`、1 × `<blockquote>`、1 × `<hr>`、9 × `<p>`
+
+> 排查同类问题时的注意点：直接 grep `storyYear` 会有 2 个命中，但那是自检件**正文里**自己写的说明文字（在 `<code>` 里），不是 YAML 泄漏。验证泄漏要挑正文绝不会出现的 YAML 专属字段。
 
 ## 三、本次定下的决策（附 why）
 
@@ -79,7 +93,9 @@ Timeline 靠 `ym(year, month)` 算真小数年定横向位置，而章节 frontm
 
 ## 五、留给下一次的接力
 
-### A. 已议定、未落地（数据/类型层，agent 可做）
+### A. ✅ 已于 2026-08-07 全部落地（数据/类型层）
+
+> 下面 1/2/3/5 已完成，保留原文是因为**决策的 why 仍然有效**。第 4 条已撤销，原因见其条目内。
 
 1. **`content/` 分两个子目录**：`chapters/`（主线）与 `extras/`（番外）。用文件系统表达分类，不要在 frontmatter 加 `kind` 再运行时过滤。URL 跟着分成 `/chapters/<slug>` 与 `/extras/<slug>`，这样「上一篇/下一篇」天然只在同序列内走。排版与页面组件两边共用一套。
 2. **主线 frontmatter 加世界内时间字段**：
@@ -94,7 +110,9 @@ Timeline 靠 `ym(year, month)` 算真小数年定横向位置，而章节 frontm
    **为什么是两个数字而不是 `storyAt: "2023-03"`**：纯数字在 YAML 里没有引号歧义（`date` 被解析成 Date 就是这么来的），不用写解析代码，直接喂 `ym()`。且 `time.ts` 的注释明确警告不能手拼 `2023.3` 这种伪小数年 —— 两位数月份必排错。
    **`date` 保留原义**（现实的写作日期），与 `storyYear` 是两回事，别合并。
 3. `_types/chapter.ts` 拆出番外的 `ExtraMeta`；`_lib/` 加 `extras.ts`。主线的 `storyYear` 应做必填校验（番外不校验）。
-4. **`Chapter.tsx` 的 `href` 改成可选** —— 轴上可能有没写成章节的纯世界观事件（DEMO 里「钟楼停摆」「白沙之乱」看着就是）。
+4. ~~**`Chapter.tsx` 的 `href` 改成可选**~~ —— **❌ 已撤销，不要做。**
+   这条与 A.2 自相矛盾：既然裁定了「Timeline 的数据源就是章节 frontmatter」（`getAllChapters()`），那么轴上每个节点都对应一个 `.mdx` 文件，都必然有 slug，`href` 永远有值。当初写这条是还残留着「轴上可能有无章节的纯事件」那个被否掉的方案的影子。
+   真要在轴上放没写成章节的世界观事件，那是**另建一份年表数据**（当时的选项 A），属于推翻 A.2 的决策，不是改一个 prop 能解决的 —— 那时再连带处理 `href`。
 5. ⚠️ **同步更新 `doc/notes/7.27-mdx编辑器调研.md` §六 的导出契约** —— frontmatter 字段一改就是改两个仓库之间的接口，不同步以后必出错。
 
 ### B. 用户的地盘（agent 不要主动接手，最多给参考稿）
@@ -105,9 +123,10 @@ Timeline 靠 `ym(year, month)` 算真小数年定横向位置，而章节 frontm
 
 ### C. 待用户拍
 
-- `side` vs `branch` 的字段命名
-- `app/(reading)/chapters/page.tsx`（空目录页）删不删 —— 按决策 7 应该删
-- 长文阅读要不要让顶栏随滚动隐退（需给 `NavMode.scroll` 加第三种姿态，属外壳层改动，等排版定稿后判断更准）
+- **`side` vs `branch` 的字段命名** —— 已暂按 `branch` 落地（frontmatter 里 "side" 太含糊，写作者要看得懂）。要改只需动 `_types/chapter.ts` 一处 + 接线时的映射，`Chapter.tsx` 的 prop 名不用动。
+- **长文阅读要不要让顶栏随滚动隐退** —— 需给 `NavMode.scroll` 加第三种姿态，属外壳层改动。现在没有排版，无从判断顶栏碍不碍事，等排版定稿再看。
+- **番外插图放哪** —— `asset-organization.md` 只定了主线的 `public/chapters/<slug>/`，没定番外。番外正文现在能引 `/chapters/…` 的图但语义不对，落第一篇番外插图前要定（大概率是 `public/extras/<slug>/`，定了要同步那份 decisions）。
+- ~~`app/(reading)/chapters/page.tsx` 删不删~~ —— **已按决策 7 删除**（08-07）。
 
 ### D. 中文排版的几个起点值（未经实测，用户定稿时以观感为准）
 
@@ -135,17 +154,27 @@ Timeline 靠 `ym(year, month)` 算真小数年定横向位置，而章节 frontm
 | 10 | **章节插图走纯字符串路径**（`asset-organization.md`），拿不到尺寸，所以用裸 `<img loading="lazy" decoding="async">` + CSS `aspect-ratio`，不用 `next/image`。这是「写作流畅」与「图片优化」两条决策的真实冲突，已判定前者优先 |
 | 11 | `Fx` 的 type 枚举一直挂着未定（7.27 note §八.3），做阅读区就是兑现的时候。建议只实现 1–2 种，写成 `[data-fx="glow"]` 的 SCSS 块（加 type 只加 CSS 不动 TSX），**每种都要有 `prefers-reduced-motion` 降级** |
 
-## 七、未提交状态（2026-08-06 会话结束时）
+## 七、提交状态
 
-```
- M next.config.ts
- M package.json
- M pnpm-lock.yaml
-?? app/(reading)/          ← 用户建的三个空文件
-?? app/_lib/chapters.ts
-?? app/_types/chapter.ts
-?? content/
-?? mdx-components.tsx
-```
+08-06 的全部产出已由用户提交在 **`cfe76a3 reading developing`**（含那三个空 page 文件，所以那个 commit 的 `tsc` 是不过的）。
 
-尚未 commit。`content/` 确认未被 `.gitignore` 挡住。
+08-07 的改动截至写这段时**尚未 commit**。`content/` 确认未被 `.gitignore` 挡住。
+
+## 八、2026-08-07 增量记录
+
+接着 §五A 的清单做完了数据层，并补上了 08-06 没验成的端到端验证。
+
+**做了什么**（文件角色见 §二 的表）：
+
+1. **抽出 `_lib/content.ts` 作为共用底层。** `chapters.ts` 与 `extras.ts` 原本会重复约 40 行（目录扫描、slug 正则、gray-matter、Date 兜底、共有字段校验）。抽的边界是「共有的收窄」与「各域专属的校验」：`readBaseMeta()` 返回 `{ base, raw }`，`raw` 让调用方接着校验自己域的字段（主线的 `storyYear`），不必再读一次盘。
+2. **主线 frontmatter 加了世界内时间四字段**，`storyYear` 做**必填校验**（缺了 Timeline 无法定位，构建期直接抛错）。
+3. **`extras.ts` 刻意做得很薄** —— 只有 slug 清单和单篇读取，不提供排序与 neighbors。番外的顺序真源是 `EXTRA_DATA`，在 `_lib/` 里再写一套排序就是立第二个真源。
+4. **`_lib/` 不换算真小数年。** `getAllChapters()` 只吐 `storyYear` / `storyMonth` 原值，不调 `ym()` —— 那个函数在 `_experiences/library/v1/time.ts`，`_lib/` 反向依赖 `_experiences/` 是坏结构。接线时在 Timeline 那侧调。
+5. 删掉空的目录页、填上 `layout.tsx` 与章节页薄壳参考稿，`tsc` 从 3 个错误回到 0。
+6. 同步了 `doc/notes/7.27-mdx编辑器调研.md` §六 的导出契约（新增字段 / 分目录 / `date` 必须加引号），那份是与编辑器仓库之间的接口权威版。
+
+**一处 API 改名**：`getNeighbors` → **`getChapterNeighbors`**（番外将来也要 neighbors，裸名字会撞）。`ChapterNeighbors` 类型换成泛型 `Neighbors<ChapterMeta>`。
+
+**验证**：`tsc` 0 错误；`pnpm lint` 仍是那 3 个既有 warning（`home/v1`，与阅读区无关）；`pnpm build` 通过并预渲染出 `/chapters/00-pipeline-check`；HTML 内容逐项查过（见 §二）。
+
+**下一步就是 §五B 的第一优先项：正文排版**（`app/_styles/chapter-theme.scss`）。现在 `/chapters/00-pipeline-check` 已经能真实访问，是块可以直接调的画布——薄壳里没有任何样式，所见即浏览器默认排版。
