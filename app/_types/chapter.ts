@@ -17,14 +17,21 @@
  */
 export type BaseMeta = {
   /**
-   * URL 与插图目录名共用的稳定标识，形状 `<序号>-<描述词>`（如 `01-mist`）。
+   * URL 与插图目录名共用的稳定标识。
+   *
+   * ⚠️ 形状**按域不同**：主线是 `<序号>-<描述词>`（`01-mist`），番外是纯描述词
+   * （`qingming`，不带序号 —— 番外的顺序真源是 EXTRA_DATA 而非文件名）。
+   * 两个正则与"为什么不合并"的理由见 app/_lib/content.ts 的 SLUG_SHAPE。
    *
    * 由写作者手填，不从中文标题自动生成（7.27 note §六）。
-   * 校验正则见 app/_lib/content.ts 的 SLUG_RE。
    *
    * ⚠️ 必须与文件名一致 —— content/chapters/01-mist.mdx 的 slug 就是
    * "01-mist"。不一致会在读取时直接抛错，因为 URL、插图目录、文件名三者
    * 靠它对齐，任一处漂了都是静默的坏链。
+   *
+   * ⚠️ 番外还多一处要对齐：`EXTRA_DATA` 里那条记录的 `slug` 字段。轮盘的链接
+   * 是从那边生成的，这边改名那边不改就是死链（目前**没有**构建期校验，见
+   * doc/logs/2026-08-10-chapter-typography.md 末尾的遗留清单）。
    */
   slug: string;
 

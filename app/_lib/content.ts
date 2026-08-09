@@ -22,18 +22,45 @@ export type ContentDir = "chapters" | "extras";
 const CONTENT_ROOT = path.join(process.cwd(), "content");
 
 /**
- * slug 形状：`<两位以上序号>-<小写描述词>`，见 doc/notes/7.27-mdx编辑器调研.md §六。
+ * slug 形状，**按域不同**。见 doc/notes/7.27-mdx编辑器调研.md §六。
  *
- * 它同时是 URL、插图目录名（public/chapters/<slug>/）和文件名，三者靠它对齐。
+ * 共同点：slug 同时是 URL、插图目录名（`public/<域>/<slug>/`）和文件名，
+ * 三者靠它对齐。全小写短横线，不含中文（asset-organization.md §五）。
+ *
+ * 不同点在**要不要序号前缀**：
+ *
+ *   - `chapters` = `<两位以上序号>-<描述词>`（`01-mist`）。序号是主线的固有属性
+ *     （`ChapterMeta.chapter`），带进文件名让 readdir 的字典序 = 章序，
+ *     `listSlugs` 才敢直接 `.sort()`。
+ *
+ *   - `extras` = 纯描述词（`qingming`）。番外**没有序号** —— 顺序的唯一真源是
+ *     `EXTRA_DATA` 的数组顺序（理由见 extras.ts 顶部）。硬要文件名带个数字前缀，
+ *     那个数字就成了第二个顺序真源，与 EXTRA_DATA 一漂就是静默错序，而且它排
+ *     出来的顺序看着还挺像对的 —— 最难查的那种错。
+ *
+ * ⚠️ 所以别把这两个正则合并成一个宽松的 `^[a-z0-9-]+$`：那样主线文件名漏了
+ * 序号也能过，而漏了序号的后果是 `listSlugs` 的排序静默失效。
  */
-export const SLUG_RE = /^\d{2,}-[a-z0-9-]+$/;
+const SLUG_SHAPE: Record<ContentDir, RegExp> = {
+  chapters: /^\d{2,}-[a-z0-9-]+$/,
+  extras: /^[a-z][a-z0-9-]*$/, // 首字符限字母：挡住 `01-…` 这种伪序号混进番外
+};
+
+/** 某个域的 slug 校验正则。给域外的校验脚本用（站内校验走 listSlugs / readBaseMeta）。 */
+export function slugShape(dir: ContentDir): RegExp {
+  return SLUG_SHAPE[dir];
+}
 
 export function fail(dir: ContentDir, slug: string, why: string): never {
   throw new Error(`[content] content/${dir}/${slug}.mdx: ${why}`);
 }
 
 /**
- * 某个域下全部合法 slug，按文件名升序（slug 以序号开头，等价于序号序）。
+ * 某个域下全部合法 slug，按文件名升序。
+ *
+ * ⚠️ 「升序」的语义按域不同：主线 slug 以序号开头，字典序 = 章序；番外 slug
+ * 没有序号，这里排出来的只是**字母序**，不是展示顺序（那个看 EXTRA_DATA）。
+ * 排序在这里只为让 generateStaticParams 的输出稳定、构建产物可复现。
  *
  * 只 readdir、不读文件内容 —— generateStaticParams 用它就够，不必解析全部
  * frontmatter。
@@ -50,8 +77,10 @@ export function listSlugs(dir: ContentDir): string[] {
     .filter((f) => f.endsWith(".mdx")) // 顺带滤掉 .DS_Store 之类
     .map((f) => path.basename(f, ".mdx"))
     .filter((slug) => {
-      if (SLUG_RE.test(slug)) return true;
-      console.warn(`[content] 文件名不符合 slug 形状，已跳过：${dir}/${slug}.mdx`);
+      if (SLUG_SHAPE[dir].test(slug)) return true;
+      console.warn(
+        `[content] 文件名不符合 ${dir} 域的 slug 形状 ${SLUG_SHAPE[dir]}，已跳过：${dir}/${slug}.mdx`,
+      );
       return false;
     })
     .sort();
@@ -68,7 +97,7 @@ export function readBaseMeta(
   dir: ContentDir,
   slug: string,
 ): { base: BaseMeta; raw: Record<string, unknown> } | null {
-  if (!SLUG_RE.test(slug)) return null; // 挡住 URL 上乱敲的 slug，不去碰文件系统
+  if (!SLUG_SHAPE[dir].test(slug)) return null; // 挡住 URL 上乱敲的 slug，不去碰文件系统
 
   const file = path.join(CONTENT_ROOT, dir, `${slug}.mdx`);
   if (!fs.existsSync(file)) return null;

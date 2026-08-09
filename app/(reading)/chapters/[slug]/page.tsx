@@ -1,10 +1,15 @@
 // 章节页薄壳 —— URL 是 /chapters/<slug>，分组名不进路径。
 //
-// ⚠️ 这是【参考稿】，只做到"管道能跑通"：取元数据 → 动态 import 正文 →
-// 裸渲染。**没有任何排版与周边 chrome**，那些归用户：
-//   - 正文排版      → app/_styles/chapter-theme.scss（未建）
+// ⚠️ 这是【参考稿】。目前做到：取元数据 → 动态 import 正文 → 套排版容器。
+//   - 正文排版      → app/_styles/chapter-theme.scss ✅ 已落地（由分组 layout import）
 //   - 进度条/上下章 → app/_experiences/reading/v1/（未建）
-// 等 ChapterV1 落地后，把下面的 <Body /> 包进去即可。
+// 等 ChapterV1 落地后，把下面整个 <article> 挪进去即可 —— 这里只保留
+// generateStaticParams / generateMetadata / notFound 那三样路由层职责。
+//
+// className 是【裸字符串】而不是 `styles.xxx`，这是有意的：chapter-theme.scss
+// 是全局样式表（正文的裸元素拿不到 CSS Module 的 hash 类名）。
+// ⚠️ 所以这几个类名与那份 SCSS 是【隐式契约】，改名要两边一起改，改漏了不会
+// 报错、只会静默丢样式（见 doc/notes/8.4-Link下划线与全局reset.md 末尾）。
 //
 // 关于「数据注入点」：AGENTS.md 说注入点是版本顶层组件而非路由薄壳。这里出现
 // getChapter 是 Next 的硬约束 —— generateStaticParams / generateMetadata /
@@ -49,5 +54,22 @@ export default async function ChapterPage({ params }: Props) {
   // 见 node_modules/next/dist/docs/01-app/02-guides/mdx.md 第 325 行。
   const { default: Body } = await import(`@/content/chapters/${slug}.mdx`);
 
-  return <Body />;
+  return (
+    <article className="chapter-page">
+      <header className="chapter-head">
+        <h1 className="chapter-title">{meta.title}</h1>
+        {/* 元信息只放章序号。
+            ⚠️ 刻意【不放 meta.date】—— 那是现实的写作/发布日期，在阅读态里对
+            读者没有意义，而且极容易和 storyYear（世界内时间）混淆。要显示世界内
+            时间是个产品判断（"故事发生在 2023 年 3 月"有代入感，但也会剧透
+            时间线），留给你定。
+            meta.wordCount 同理，想显示就在这行后面接一个 · {meta.wordCount} 字。 */}
+        <p className="chapter-meta">第 {meta.chapter} 章</p>
+      </header>
+
+      <div className="chapter-prose">
+        <Body />
+      </div>
+    </article>
+  );
 }

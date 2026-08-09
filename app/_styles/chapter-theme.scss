@@ -1,0 +1,495 @@
+// ============================================================
+// chapter-theme.scss —— 正文排版契约
+// ------------------------------------------------------------
+// 阅读区（主线章节 + 番外）的正文排版。**全局样式表，不是 CSS Module**，
+// 由 app/(reading)/layout.tsx 单独 import —— 只有阅读区加载它。
+//
+// ⚠️ 为什么是全局而不是 Module：正文由 MDX 编译成【裸元素】（p / h2 /
+// blockquote / …），拿不到 Module 的 hash 类名，只能靠容器后代选择器上样式。
+// 且这份文件要与写作编辑器仓库【人工保持一致】（doc/notes/7.27-mdx编辑器
+// 调研.md §五），hash 过的类名搬过去不可读。
+//
+// ⚠️ 位置是有意的跨版本契约：放 app/_styles/ 而不是 _experiences/reading/v1/。
+// 做 v2 时版本目录会换，编辑器那边的同步对象就消失了。见
+// doc/logs/2026-08-06-reading-mdx-pipeline.md 决策 6。
+//
+// ────────────────────────────────────────────────────────────
+// 同步边界（给搬这份文件到编辑器仓库的人）
+// ────────────────────────────────────────────────────────────
+//   §1 变量、§4 正文块级、§5 行内、§6 插图  → 要搬（编辑器预览要一致）
+//   §2 页面容器、§3 章题区                  → 站点专用，编辑器不需要
+//
+// ────────────────────────────────────────────────────────────
+// ⚠️ 本文件的全部数值由 agent 按「清爽 / 线上阅读器」的方向定，随时可改。
+//    每个值下面写了它在管什么、改大改小会怎样，改的时候看注释就够。
+//    唯一不建议动的是 §1 里 --read-fs 的 max() 写法，理由写在那儿。
+// ============================================================
+
+// ============================================================
+// §1 变量 —— 全部挂在 .chapter-page 作用域内
+// ------------------------------------------------------------
+// ⚠️ 刻意【不写进 :root】。纸色偏黄只该发生在阅读区，写进 :root 会让首页
+// 与藏书阁跟着变黄。globals.scss 的 --bg-paper / --text-ink 一个都不动。
+//
+// ⚠️ 纸色是这一节里【唯一】走 SCSS 变量而不是直接写字面量的一个，因为它有
+// 两个消费者：.chapter-page 自己（§2 开头）和 body 的视口回弹区（§2 末）。
+// 而 body 是 .chapter-page 的【祖先】—— 自定义属性只向下继承，祖先取不到
+// --read-paper，`background: var(--read-paper)` 会解析失败，然后 background
+// 回退成 initial（transparent），**不是**回退成某个合理值。
+// 这个 bug 我上一轮就埋进去了，实测 body 背景是 rgba(0,0,0,0)；Windows 上
+// 一点症状都没有（没有橡皮筋滚动），只在 iOS / macOS 过度滚动时露出一条冷白。
+// 用编译期变量把真源收成一个，比让 body 也能读到 --read-paper 更稳：后者要
+// 把整节变量提到 `:root:has(.chapter-page)`，等于把【整份排版】押在 :has()
+// 上，不支持时字号、行宽、缩进一起没；现在不支持 :has() 也只丢回弹条的颜色。
+// ============================================================
+
+// 纸色的单一真源。
+// ⚠️ 自定义属性里必须写 `#{$paper}` 而不是 `$paper` —— Sass 把 `--x: …` 的值
+// 当作纯 CSS token 流，不做变量替换，写 `$paper` 会把 "$paper" 这四个字符原样
+// 输出给浏览器，然后静默失效。普通属性（§2 末的 background）反而直接写就行。
+$paper: #faf7ef;
+
+.chapter-page {
+  // --- 纸与墨 ---
+
+  // 纸色：比全站 --bg-paper (#fafaf9) 偏黄一档。
+  // ⚠️ 别往 #f5ecd7 那种做旧纸走 —— 长时间读会觉得脏，而且插图贴上去会整体
+  // 发灰（图片的白点比纸更白，反衬出纸是脏的）。
+  --read-paper: #{$paper};
+
+  // 正文墨色：比全站 --text-ink (#1c1917) 退了一档，减少长时间直视的刺感。
+  // 实测对比度 14.7:1（WCAG AAA 要求 7:1），退这一档完全安全。
+  --read-ink: #262220;
+
+  // 次要文字（章题下的元信息、引用块）。对比度 7.1:1，仍达 AAA。
+  --read-ink-soft: #57534e;
+
+  // 分隔线。纸色系的浅线，不用全站的 --line-light（那是偏冷的灰）。
+  --read-rule: #e6dfd0;
+  // 引用块左边线 / 链接下划线，比分隔线深一点才看得见。
+  --read-bar: #d9d0bd;
+
+  // --- 正文度量 ---
+
+  // 正文字号。
+  // ⚠️ max() 不是花活，它同时解决两件事，改成裸 rem 或裸 px 都会丢一件：
+  //   · 17px 地板 —— tech-stack.md §3.8 追加定的根字号断点阶梯
+  //     （62.5% → 56.25% ≤1280 → 50% ≤900）将来一落地，1.8rem 在小屏会变成
+  //     14.4px。那对全站通用尺寸是对的，对阅读正文是灾难。阅读字号是
+  //     【可读性下限】而不是排版度量，属于 §3.8 那张三层单位表里"第三层例外"
+  //     的同类，该锚死不该跟着缩。
+  //   · 保留无障碍 —— 用户把浏览器默认字号调大时 1rem 变大，1.8rem 会超过
+  //     17px 地板并胜出，正文照样跟着变大。写成裸 px 就把这条掐死了。
+  --read-fs: max(17px, 1.8rem);
+
+  // 行高。中文没有西文 x-height 的视觉呼吸，1.6 会挤，2.1 以上行与行之间会
+  // 断开、视线找不到下一行。1.9 是这一档字号下比较稳的中间值。
+  --read-lh: 1.9;
+
+  // 行宽。em 锚正文字号，所以 34em ≈ 34 个汉字/行 —— 改字号时行宽自动跟随，
+  // 不用两处一起改。
+  // ⚠️ 别照搬西文的「65-75 字符」：汉字宽一倍，换过来是 32-38 字。超过 40 字
+  // 视线从行末回到下一行行首时会串行，那一跳是长文阅读里唯一高频重复的动作。
+  --read-measure: 34em;
+
+  // 首行缩进。中文出版惯例是 2 字，且【每段都缩】（含首段与标题后第一段）——
+  // 首段不缩进是西文惯例，中文照搬会显得漏了一段。
+  --read-indent: 2em;
+
+  // 段间距。
+  // ⚠️ 刻意压到极小。缩进与段间距是两套【等价】的分段信号，同时给足会双重
+  // 分隔、段落散架。留 0.4em 而不是 0 的理由：完全贴死时长段落之间会糊成
+  // 一块，留一点点让眼睛能数出段。要更像纸书就调到 0，要更像网页就往 0.8em 走
+  // （但那时应该把 --read-indent 改成 0，二选一）。
+  --read-gap: 0.4em;
+
+  // --- 页面留白 ---
+
+  // 左右留白。用 rem（跟随根字号阶梯是对的，这是排版度量不是可读性下限）。
+  // 小屏靠它保证正文不贴边。
+  --read-pad-x: 2.4rem;
+
+  // 顶部给 Nav 让位。Nav 是 position: fixed，不占布局空间。
+  // ⚠️ 这个值是【估的】：Nav 的视觉尺寸还是 TODO 状态（Nav.module.scss 里
+  // padding / top 外距都没定稿），现在实测约 5rem 高，8rem 留了呼吸。
+  // Nav 定稿后这里要回来对一次，或者改成引用 Nav 导出的高度变量。
+  --nav-clearance: 8rem;
+}
+
+// ============================================================
+// §2 页面容器 —— 站点专用，编辑器不需要搬
+// ============================================================
+
+.chapter-page {
+  // body 是 flex column（globals.scss），Nav 是 fixed 不占流，
+  // 所以正文容器是唯一的在流内 flex 子项，flex: 1 让它撑满视口高度。
+  flex: 1 0 auto;
+
+  padding: var(--nav-clearance) var(--read-pad-x) 12rem;
+  background: var(--read-paper);
+  color: var(--read-ink);
+
+  // 中西文都交给思源宋体。
+  // ⚠️ 刻意【不继承 body 的 font-family】—— 那条链是
+  // `var(--font-open-sans), var(--font-noto-serif-sc), …`，拉丁走无衬线的
+  // Open Sans、中文 fallback 到宋体，同一段里混排会明显打架。
+  // Noto Serif SC 自带的拉丁字形就是 Noto Serif 的设计，质量够用，
+  // 而且【零额外体积】—— 那个字体本来就已经加载了。
+  font-family: var(--font-noto-serif-sc), Georgia, "Times New Roman", serif;
+  font-size: var(--read-fs);
+  line-height: var(--read-lh);
+}
+
+// 视口回弹区（橡皮筋滚动露出的那一条）也变纸色。
+// body 的 background 是 var(--background)（#fafaf9），不处理的话在 macOS /
+// 移动端过度滚动时会露出一条偏冷的白，很显眼。
+// 用 :has() 而不是给 body 加 class —— App Router 里嵌套 layout 碰不到 <body>。
+//
+// ⚠️ 这里【不能】写 var(--read-paper)：body 是 .chapter-page 的祖先，取不到
+// 定义在后代上的自定义属性，var() 解析失败 → background 回退成 transparent。
+// 详见 §1 顶部。所以走编译期的 $paper，真源仍然只有一个。
+body:has(.chapter-page) {
+  background: $paper;
+}
+
+// 正文列与章题共用同一条中轴。
+// em 在这里锚的是继承来的 --read-fs（§2 设在 .chapter-page 上），所以
+// 34em 就是 34 个字宽。
+.chapter-prose,
+.chapter-head {
+  max-width: var(--read-measure);
+  margin-inline: auto;
+}
+
+// ============================================================
+// §3 章题区 —— 站点专用，编辑器不需要搬
+// ------------------------------------------------------------
+// 这一段的 DOM 由 chapters/[slug]/page.tsx 写，所以给了类名而不像正文那样
+// 用元素后代选择器。
+// ============================================================
+
+.chapter-head {
+  // 4em ≈ 72px。章题与正文之间要有明确的一次停顿，但别拉到像两个页面。
+  margin-bottom: 4em;
+  text-align: center;
+}
+
+.chapter-title {
+  margin: 0;
+  // 1.5em ≈ 27px。刻意不大 —— 层级靠【空间】而不是靠字号和字重堆，
+  // 这是"清爽"和"张扬"的分界线。
+  font-size: 1.5em;
+  // 宋体的 700 在标题上会显得墨很重，500 更利落。
+  font-weight: 500;
+  line-height: 1.5;
+  // 中文标题适度加字距会显得从容；正文千万别加（会散）。
+  letter-spacing: 0.05em;
+}
+
+.chapter-meta {
+  margin: 1.2em 0 0;
+  font-size: 0.8em;
+  color: var(--read-ink-soft);
+  letter-spacing: 0.08em;
+}
+
+// ============================================================
+// §4 正文块级元素 —— 要搬
+// ============================================================
+
+.chapter-prose {
+  // 左对齐（右侧参差）。
+  //
+  // ⚠️ 这里【实测推翻】过一版：初稿按主流中文阅读器的惯例给了
+  // `text-align: justify; text-justify: inter-character`，在 390px 手机视口
+  // 下实测崩掉了 —— 一行里只要出现一个不能断的英文词或行内 code，剩余空间
+  // 就被均摊到每个汉字之间，排出「它 存 在 的 唯 一 理 由 是」这种夸张字距。
+  // 中英混排在本项目的正文里是常态（专名、术语），所以两端对齐的失控风险高于
+  // 它带来的整齐收益。
+  //
+  // 想试两端对齐就把下面这行换成 `text-align: justify`（不要再加
+  // text-justify，让浏览器自己决定策略），并且一定要在窄视口下看一眼。
+  text-align: start;
+
+  // 中日文的严格避头尾 —— 逗号句号不落在行首、开引号不落在行尾。
+  line-break: strict;
+  // 超长的 URL / 英文串不撑破行宽。
+  overflow-wrap: break-word;
+
+  // 全角标点的挤压（「，」「。」右侧的空隙收掉）。中文排版专业度就体现在
+  // 这一条上，但它是新特性（Chrome 123+），不支持的浏览器会直接忽略，
+  // 没有降级风险，所以放心留着。
+  text-spacing-trim: space-first;
+}
+
+// 用子选择器 > 而不是后代 —— MDX 的输出是平铺的，这样能避开
+// blockquote / li 内部的 p（那些有自己的规则，见下）。
+.chapter-prose > p {
+  margin: 0 0 var(--read-gap);
+  text-indent: var(--read-indent);
+}
+
+// ⚠️ 正文第一个块的上间距归零。
+// 实测发现的问题：正文常以 h2 开头，而 h2 有 3em 上间距，叠上章题区的 4em
+// 下间距 = 7em ≈ 126px 的空洞，章题会像被孤立在页顶。
+// 章题与正文之间的距离只该由 .chapter-head 的 margin-bottom 一处决定。
+.chapter-prose > :first-child {
+  margin-top: 0;
+}
+
+// 章内小节标题。字号只比正文大一档（1.15em ≈ 21px），层级靠上方的大空白
+// 建立 —— 3em 上间距 vs 1.2em 下间距，让标题"贴着它管的那段"。
+// ⚠️ 上下不对称是有意的：对称会让标题浮在两段之间，读者判断不出它属于哪边。
+.chapter-prose h2 {
+  margin: 3em 0 1.2em;
+  font-size: 1.15em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-indent: 0;
+}
+
+.chapter-prose h3 {
+  margin: 2.4em 0 1em;
+  font-size: 1em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-indent: 0;
+}
+
+// 引用块 —— 小说里大概会放信件、碑文、摘录。
+// 左边线 + 退一档的墨色，跟正文拉开但不换页。
+// ⚠️ 另一种做法是【不要左边线】，只用左右双向缩进 + 小一号字（更像纸书，
+// 更安静）。想试就把 border-left 换成 margin-inline: 2em 并加 font-size: .95em。
+.chapter-prose blockquote {
+  margin: 2.2em 0;
+  padding-left: 1.6em;
+  border-left: 2px solid var(--read-bar);
+  color: var(--read-ink-soft);
+}
+
+// 引用块内不缩进 —— 已经有左边线和缩进两重信号了，再加首行缩进是第三重。
+.chapter-prose blockquote p {
+  margin: 0 0 0.6em;
+  text-indent: 0;
+}
+
+.chapter-prose blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+// 分隔线 = 场景切换。
+// 不用通栏线（那是"文档"的语汇，会把小说切成两篇文章），用居中的一小段短线，
+// 上下给足空白 —— 读者感知到的是"一次呼吸"而不是"一道墙"。
+.chapter-prose hr {
+  width: 4em;
+  margin: 3.5em auto;
+  border: 0;
+  // ⚠️ 实测从 --read-rule 换成 --read-bar：只有 4em 长的一小段线，用
+  // --read-rule (#e6dfd0) 在纸色上几乎看不见，那次呼吸就白留了。
+  // 线越短越需要深一点才成立。
+  border-top: 1px solid var(--read-bar);
+}
+
+.chapter-prose ul,
+.chapter-prose ol {
+  margin: 1.8em 0;
+  padding-left: 2em;
+}
+
+.chapter-prose li {
+  margin-bottom: 0.4em;
+  // 列表项自带项目符号做分项信号，不再缩进。
+  text-indent: 0;
+}
+
+// ============================================================
+// §5 行内元素 —— 要搬
+// ============================================================
+
+.chapter-prose strong {
+  font-weight: 700;
+}
+
+// ⚠️ 中文排版里【斜体是禁忌】—— 汉字没有斜体设计，浏览器会做几何倾斜，
+// 笔画会歪掉、变糊。中文的强调惯例是【着重号】（字下方的点）。
+.chapter-prose em {
+  font-style: normal;
+  text-emphasis: filled dot;
+  // 横排中文的着重号在字【下方】（竖排才在右侧）。
+  text-emphasis-position: under right;
+}
+
+// 拉丁文段落里的 em 恢复斜体 —— 那是它本来的语汇。
+// 用法是在 .mdx 里写 <span lang="en">…</span>，日常不用管。
+.chapter-prose :lang(en) em {
+  font-style: italic;
+  text-emphasis: none;
+}
+
+// 正文里的行内链接。
+// ⚠️ 全站没有 a 的 reset（见 doc/notes/8.4-Link下划线与全局reset.md），
+// 不写这段的话正文链接是浏览器默认的蓝紫色 + 粗下划线。
+// 下划线【保留】—— 正文场景它是有用的信息，只是压细、压淡、往下挪，
+// 让它不切到汉字的下缘笔画。
+.chapter-prose a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--read-bar);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration-color: currentColor;
+  }
+}
+
+// 行内代码。小说正文里不会出现，但番外 / 世界观类文本可能会。
+// ⚠️ 实测压过一轮权重：初稿给了 4% 底色 + 上下 padding，在自检件那种 code
+// 密集的段落里，一行被切成好几个灰块，垂直节奏全乱。改成极淡底色 + 【零上下
+// padding】—— 上下 padding 会撑大行盒，让那一行比邻行高，这是最容易被忽略
+// 的行距污染源。
+.chapter-prose code {
+  padding: 0 0.35em;
+  border-radius: 2px;
+  background: rgb(0 0 0 / 3%);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  // 等宽字体的视觉字号普遍偏大，压一点才和中文正文齐平。
+  font-size: 0.88em;
+}
+
+// 选中色用全站已有的荧光笔黄，和站点语汇一致。
+.chapter-page ::selection {
+  background: var(--highlight-yellow);
+  color: var(--read-ink);
+}
+
+// ============================================================
+// §6 插图 —— 要搬
+// ============================================================
+
+// ⚠️ Markdown 的 ![](…) 会被包成 <p><img></p>，而 <p> 带 2em 首行缩进，
+// 图片会被推右两个字。这里用纯 CSS 解决（:has），所以 mdx-components.tsx
+// 不需要为 img 写映射 —— 那个文件留给 Term / Fx 就好。
+.chapter-prose p:has(> img:only-child) {
+  margin: 2.6em 0;
+  text-indent: 0;
+  text-align: center;
+}
+
+// ⚠️ 章节插图走【纯字符串路径】（doc/decisions/asset-organization.md），
+// 拿不到宽高，所以不能用 next/image。裸 img 的代价是加载时没有占位高度、
+// 图片一到就把下文顶下去（CLS）。真图到位后给每张图补 aspect-ratio 可解，
+// 现在没有图，先不预设。
+.chapter-prose img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-inline: auto;
+}
+
+// ============================================================
+// §7 小屏 —— 要搬
+// ------------------------------------------------------------
+// 阅读区在所有终端都是核心场景（tech-stack.md §3.8），不是"移动端做简化版"
+// 的那一类。
+// 这里只调三个变量，没有一条新的布局规则 —— 小屏上行宽本来就由 padding
+// 决定（34em 根本到不了），所以要动的只有字号、行高和留白。
+// ============================================================
+
+@media (max-width: 600px) {
+  .chapter-page {
+    // 小屏要在一行里装够字数，字号略降一档；地板同步降到 16.5px。
+    --read-fs: max(16.5px, 1.7rem);
+    // 行短了，行高可以略收 —— 行高的作用是帮视线找到下一行，行越短越容易找。
+    --read-lh: 1.85;
+    --read-pad-x: 2rem;
+    --nav-clearance: 6.4rem;
+  }
+}
+
+// ============================================================
+// §8 文末装帧件 —— 站点专用，【不搬】
+// ------------------------------------------------------------
+// 目前只有《清明》有这一组。它不是插图，是「本篇的赞助商 / 协力」名单：
+// 华东（政府）+ 书部（机构）+ 老禾奶茶（商家）+ 阿米尼报社（出品方）。
+// DOM 结构与 alt 写在 content/extras/qingming.mdx 里（本篇专属，所以写在
+// 正文文件而不是做成番外通用组件）。
+//
+// 不搬去写作编辑器仓库 —— 编辑器只需要正文排版，不需要渲染赞助商区。
+// 类名刻意不带篇名（`.chapter-colophon` 而非 `.qingming-colophon`），
+// 将来别的番外也带装帧件时可以直接照用。
+//
+// ⚠️ 这一节的留白、gap、层级间距【全是 agent 定的】，随时可改。
+// 唯一有原稿依据的是 `align-items: flex-end` —— 见下面那条注释。
+// ============================================================
+
+.chapter-colophon {
+  // 与正文末尾拉开明显距离：这一组不属于正文，读者需要一个"文章到这儿结束了"
+  // 的信号。比 hr 的 3.5em 大一倍，因为这里没有分隔线，全靠空白说话。
+  margin-top: 7em;
+  text-align: center;
+}
+
+// 上层：题字「华东」+ 右下的阿米尼报社朱印。
+// 原稿里它单独占一行且居中（栏宽 553px，图宽 183px，左偏移 186px ≈ 正中），
+// 所以这里也单独一行。
+//
+// ⚠️ 带 .chapter-prose 前缀是为了压过 §6 的 `.chapter-prose img`（特异性
+// 0,1,1）—— 只写 .chapter-colophon-title（0,1,0）会输，margin 静默不生效。
+.chapter-prose .chapter-colophon-title {
+  margin: 0 auto 3.2em;
+}
+
+// 下层：四枚小标记横排。
+//
+// ⚠️ 原稿里这一排总跨 668px、比正文栏宽（553px）宽出 115px，左右两端都伸进
+// 页边距。这里【没有还原那个越界】：网页上要做出血只能靠负 margin，而负
+// margin 在 600~800px 这段视口会把内容顶出屏幕（正文宽随视口收，负值不收）。
+// 拿一整类断点 bug，换一个读者只会看成"排版没对齐"而不是"故意压边"的效果，
+// 不值。要试的话就在这里加 margin-inline 负值，记得同时抬高小屏断点。
+//
+// 尺寸算过：四张图 90+175+122+111 = 498px，加 3 个 2rem 的 gap = 558px，
+// 落在正文行宽的下界 578px（34em × 17px 地板，见 §1）之内 —— 桌面恒定一行。
+// flex-wrap 是给"读者放大字体 / 将来加第五枚"兜底的，不是主路径。
+.chapter-colophon-row {
+  display: flex;
+  flex-wrap: wrap;
+  // ⭐ 全节唯一有原稿依据的一条：**底线对齐**。
+  // docx 里这四张的底边坐标是 321 / 322 / 318 / 321 —— 作者是照着一条基线
+  // 手摆的，不是随手放。换成 center 会让这组标记看上去在飘。
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2.4rem 2rem;
+}
+
+// ⚠️ 必须覆盖 §6 的 `.chapter-prose img { margin-inline: auto }`。
+// 在 flex 容器里 auto margin 会**吸收掉全部自由空间**，结果是 gap 形同失效、
+// 四张图被推到两端撑满一行。症状是"gap 写了没反应"，很容易查成 gap 的问题。
+.chapter-prose .chapter-colophon-row img {
+  margin: 0;
+  // 不写 width —— HTML 上的 width/height 属性已经给出内在尺寸（取自 docx 的
+  // 显示尺寸），让四枚保持作者手摆的相对大小关系。这里只兜住极窄屏。
+  max-width: 100%;
+  height: auto;
+}
+
+// 装帧件的小屏调整【故意写在这里而不是 §7 那个 media 块里】。
+// ⚠️ 初稿放进 §7 后 margin-top 静默失效过：§7 在 §8 之前，`.chapter-colophon`
+// 两处特异性相同（0,1,0），同分时后写的赢 —— 小屏那条被下面的 7em 覆盖了。
+// 规则与它的响应式覆盖写在一起，就不必再记跨节的源码顺序。
+@media (max-width: 600px) {
+  .chapter-colophon {
+    margin-top: 5.5em;
+  }
+
+  .chapter-prose .chapter-colophon-title {
+    margin-bottom: 2.6em;
+  }
+
+  // 小屏内容宽约 350px，装不下 498px 一排，会折成 2×2：
+  // 90+175 = 265、122+111 = 233，两行都有余量，不会再折出第三行。
+  .chapter-colophon-row {
+    gap: 2rem 1.6rem;
+  }
+}

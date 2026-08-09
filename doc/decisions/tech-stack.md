@@ -315,11 +315,11 @@ MDX 管道已集成。相对 2026-07-27 那条补充，实现上收窄了一处�
 | 项目 | 状态 |
 |---|---|
 | 卸载 Tailwind 相关包，引入 sass | ✅ 完成（2026-06-09）|
-| `app/styles/` 目录骨架（tokens / mixins / globals） | ⏳ 目前只有 `app/globals.scss`，尚未拆分 tokens/mixins/globals 三层 |
+| `app/_styles/` 目录骨架（tokens / mixins / globals） | ⏳ 2026-08-10 建了 `app/_styles/`（首个文件 `chapter-theme.scss`），但**不是**原计划的 tokens/mixins 三层拆分 —— 它是"全局样式表"的容器，见 [`architecture.md`](./architecture.md) §三。色板仍在 `app/globals.scss`，三层拆分待做。<br>⚠️ 目录名带 `_` 前缀（此前本行误写 `app/styles/`）—— `app/` 下不带 `_` 的目录会被当成路由段。 |
 | 设计 token 第一版（颜色 / 字号 / 间距 / 动效曲线 / 断点） | ⏳ 已在 `globals.scss` 落定"手绘日记本"色板 v1，其他维度待补 |
 | `tsconfig` 开启 strict 模式（已默认开启，需校验） | ✅ 已校验（`"strict": true`）|
 | 世界观类型集中定义目录 | ✅ 已启用（`app/_types/library.ts`、`app/_types/chapter.ts`）|
-| `@next/mdx` 集成 + 一篇示例 MDX 章节 | ⏳ 管道已集成（2026-08-06，见 §3.4 追加节）；示例只有 `content/chapters/00-pipeline-check.mdx` 这个可删的自检件，**端到端渲染尚未验证**（还没有页面 import 过 `.mdx`）|
+| `@next/mdx` 集成 + 一篇示例 MDX 章节 | ✅ 完成（管道 2026-08-06 见 §3.4 追加节；2026-08-10 端到端验证通过 —— `/chapters/00-pipeline-check` 走通 frontmatter 读取 → 动态 import → 排版渲染）。示例仍是可删的自检件 `content/chapters/00-pipeline-check.mdx`，**给 Timeline 接线前要删它**（`getAllChapters()` 会把它当真章节返回）|
 | Radix UI 按需引入（首批：Dialog / Tooltip） | ⏳ |
 | GSAP 按需引入 | ✅ 完成（首页 v1 `useParallax` 使用 `@gsap/react`） |
 | Motion 按需引入 | ✅ 完成（首页 v1 `AnimatePresence` + `useMotionValue`/`useSpring`） |
@@ -331,6 +331,7 @@ MDX 管道已集成。相对 2026-07-27 那条补充，实现上收窄了一处�
 
 记录技术选型的重大调整。格式：`YYYY-MM-DD：变更内容（原因）`。
 
+- **2026-08-10**：**§3.8 的根字号断点阶梯增加一条豁免：阅读区正文字号不参与阶梯**（三层单位分工本身未变）。正文写 `font-size: max(17px, 1.8rem)` —— `1.8rem` 让它继续跟随浏览器字号设置（无障碍不丢），`17px` 地板挡住将来阶梯把根字号从 `62.5%` 降到 `50%` 时正文一起缩到 14.4px 的后果。判据是**阶梯服务于"卡片外的装饰性尺寸"，长文正文不属于这一类**：装饰件小屏上缩小是正确的，正文缩小直接伤可读性。另**§五 清单两项状态更新**：MDX 端到端渲染已验证（此前标"尚未验证"）；`app/styles/` 一行的路径笔误订正为 `app/_styles/`，并说明该目录已建但不是原计划的 tokens/mixins 三层。SCSS 侧另记两个实测结论（`text-align: justify` 在混排短行上会炸开字距、行内 `code` 加纵向 padding 会撑高行盒），细节见 [`logs/2026-08-10-chapter-typography.md`](../logs/2026-08-10-chapter-typography.md)。
 - **2026-08-06**：**§3.4 追加一节记录 MDX 管道落地**（选型未变，只收窄实现）：只装 `remark-frontmatter` 而不装 `remark-mdx-frontmatter`，元数据统一由 `app/_lib/chapters.ts` 用 fs + gray-matter 读，目录侧与章节页共用一条路径。同时记下三个坑：Turbopack 下插件必须写成字符串、YAML 裸日期会变 Date 对象、`mdx-components.tsx` 是 App Router 下的必需品。§五 清单更新两项状态（`app/_types/` 已启用、MDX 管道已集成但端到端未验）。见 [`logs/2026-08-06-reading-mdx-pipeline.md`](../logs/2026-08-06-reading-mdx-pipeline.md)。
 - **2026-08-05（二）**：**§3.8 推翻「字号用 clamp + vw」**（原正文与 §二 总览表的「rem + clamp」失效，追加节说明现行做法）。改为根字号按断点阶梯切换，理由是 vw 驱动根字号会剥夺浏览器字号控制权（无障碍回退）。同时确立**单位三层分工**：卡外 `rem`（断点阶梯）/ 卡内叠层 `cqw` / 固定视觉厚度 `rem` 不转 —— 第三层是本日新增的例外，来自 `CardBearu` RGB 分离偏移保留 `0.3rem` 的实测判定。另**新增 §3.10 TypeScript 约定**：禁显式 `any`，缺类型用 `unknown`；`useParallax` 的 `any` 掩盖真实空指针路径为实证。
 - **2026-08-05**：**§3.5 双库分工的判据细化**（不改原表，追加两节）。原表按「UI 级 vs 场景级」分，在 bearu 名片上卡住 —— 它是 UI 级弹窗组件，但入场要编排 4 组共 8 个节点的相对时间。判据改为按「要不要编排多元素相对时间 / 要不要拖时间轴调参」选 GSAP，按「要不要 exit 动画」选 Motion，**同组件内两库并存正常，边界在元素上**。同时把「一个元素的一个属性只能有一个主人」立为跨库红线（`transform` / `opacity` / `src` 三次实证）。本项目第一幕 GSAP timeline 同日落地（`BuildBearuIntro.ts`），见 [`notes/7.29-动画编排方案.md`](../notes/7.29-动画编排方案.md) §三。

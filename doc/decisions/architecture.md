@@ -100,6 +100,9 @@ app/
 ├── _components/               # 跨页面复用的展示组件（有 UI，纯展示）   ⏳ 未建
 │   └── ...
 │
+├── _styles/                   # 【全局样式表】—— 不是 CSS Module，见下方说明
+│   └── chapter-theme.scss     #   正文排版契约（由 (reading)/layout.tsx import）
+│
 └── _types/                    # 共享类型定义
     ├── library.ts             #   Story（番外条目）
     └── chapter.ts             #   BaseMeta / ChapterMeta / ExtraMeta（正文 frontmatter 的形状）
@@ -121,6 +124,11 @@ Next.js App Router 中 `app/` 下以 `_` 开头的目录**不参与路由**（�
 | `_types/` | 共享 TypeScript 类型 | 已启用（`library.ts`、`chapter.ts`）|
 | `_assets/` | 跨版本共享的内容资产 | 未建（尚无跨版本共享需求，资产先放 `v<N>/assets/`） |
 | `_components/` | 有 UI 的共享展示组件 | 未建 |
+| `_styles/` | **全局**样式表（非 CSS Module），给拿不到 hash 类名的 DOM 用 | 已启用（`chapter-theme.scss` = 正文排版契约）|
+
+**`_styles/` 是 CSS Modules 纪律的唯一例外**，进这个目录要满足两个条件之一：① 目标 DOM 不由本仓库的 JSX 产出，因此拿不到 Module 的 hash 类名（MDX 正文编译出的裸 `<p>` / `<h2>` / `<blockquote>` 就是这种情况）；② 该样式表是**跨仓库同步契约**（写作编辑器要用同一份排版渲染预览，见 [`logs/2026-08-10-chapter-typography.md`](../logs/2026-08-10-chapter-typography.md)）。不满足这两条的样式一律留在组件旁边的 `*.module.scss`。
+
+> ⚠️ 全局样式表的代价是**类名成了隐式契约**：`page.tsx` 里写的是裸字符串 `className="chapter-page"`，改名不会报错、只会静默丢样式。所以 `_styles/` 下每个文件都要在头部列出它认哪些类名，并且**样式表本身要挂在分组 layout 上而不是 `globals.scss`** —— 否则首页与藏书阁会连带吃到它的纸色。
 
 **数据层的规划位置**：结构化数据按**域**放 `app/_data/<域>/`，对应的类型放 `app/_types/<域>.ts`——都在体验层之外，这样同一份数据能被同一页面的多个视图以及将来的 v2 共同消费，即三层模型里"换演出不动剧本"的具体实现。章节正文是例外：它走 MDX 文件，不进 `_data/`。
 
@@ -226,6 +234,7 @@ export { default } from './v1/HomeV1'
 
 ## 八、决策变更日志
 
+- **2026-08-10**：**新增 `app/_styles/` 目录，作为 CSS Modules 纪律的唯一例外**（三层模型未变）。首个文件是 `chapter-theme.scss`（正文排版契约）。触发点是 MDX 正文编译出的是**裸元素**，拿不到 CSS Module 的 hash 类名，只能靠容器后代选择器；这不是"图方便写全局"，判据已写进 §三·`_xxx` 表下方。连带定下两条：① **样式表挂在 `(reading)/layout.tsx` 而不是 `globals.scss`** —— 阅读区的纸色偏黄，全局引入会把首页与藏书阁一起染黄，且首页不该背这份体积；② **阅读区的纸色/字号变量全部收在 `.chapter-page` 选择器内，不进 `:root`**，同一个理由。另外把 tech-stack §3.8 的根字号断点阶梯与阅读正文的关系钉死：**正文字号不吃阶梯**（`max(17px, 1.8rem)`），因为阶梯是为"卡片外的装饰性尺寸"设计的，长文正文缩下去直接伤可读性。见 [`logs/2026-08-10-chapter-typography.md`](../logs/2026-08-10-chapter-typography.md)。
 - **2026-08-07**：**正文内容按域分成 `content/chapters/` 与 `content/extras/` 两个子目录**（前一天只规划了 `content/`，没分域）。理由是主线与番外混在一处会出三个问题：`chapter` 序号打架、上下篇导航串台（从主线第 3 章翻到《元旦》）、frontmatter 形状本就不同（主线要世界内时间，番外「在世界内时间上没有正当位置」但有 `art`/`wip`）。**用文件系统表达分类，比在 frontmatter 加 `kind` 字段再运行时过滤简单且不会漏。** 连带确定：① 主线 frontmatter 新增世界内时间字段（`storyYear` 必填），因为 Timeline 的数据源就是章节文件，而原有的 `date` 是现实的写作日期，两者不是一回事；② **番外的顺序真源是 `_data/library/data.ts` 的 `EXTRA_DATA`**，正文文件不带任何序号字段，否则就是第二个真源；③ 长番外拆成并列的独立文件（标题写「（上）/（中）」），**不做层级**。同时 `_lib/` 新增 `content.ts`（共用底层）+ `chapters.ts` / `extras.ts` 两个域，且**`_lib/` 不换算真小数年** —— `ym()` 在 `_experiences/library/v1/time.ts`，让 `_lib/` 反向依赖 `_experiences/` 是坏结构，换算留在 Timeline 那侧。目录图与 `_xxx` 表同步补上 `_data/` `_types/` 的实际内容（此前误标"未建"）。见 [`logs/2026-08-06-reading-mdx-pipeline.md`](../logs/2026-08-06-reading-mdx-pipeline.md) §八。
 - **2026-08-06**：**`(reading)` 分组落地，并推翻 §三 末尾"嵌套在 `(standard)` 内"的规划**——改为与 `(immersive)` / `(standard)` **平级**。理由：那句规划写在「Nav 挂进分组 layout」（2026-07-28）之前，嵌套时父 layout 已渲染 `<Nav />`，子 layout 要覆盖姿态就得再渲染一个，页面上会挂两个 Nav。结论是**在 Nav 这条轴上"两条不重合的轴"其实是一条**：一个页面只能属于一个 Nav 姿态分组；`(reading)` 存在的实质理由（不加载重动画库的打包差异）在平级时完全成立，不损失任何东西。同时定下三件与本节相关的事：① **内容真源放仓库根 `content/`**，不进 `app/`（写作编辑器要 `Cmd+S` 直写它，路径必须浅且永不移动；且 slug 是数据而非文件系统路由）——这是 `.mdx` "不进 `_data/`" 之外的位置补全；② **章节页用 `[slug]` 动态 import**，不让 `.mdx` 当路由文件；③ **不做 `/chapters` 目录页**，`/library` 就是目录（Timeline = 主线、Extra = 番外），`getAllChapters()` 的消费者是上下章导航与阅读页内的目录抽屉组件，不是页面。三层模型与版本化机制本身未变。见 [`logs/2026-08-06-reading-mdx-pipeline.md`](../logs/2026-08-06-reading-mdx-pipeline.md)。
 - **2026-08-04**：目录图补上藏书阁 v1 的实际文件（`Timeline.tsx` / `Chapter.tsx` / `data.ts`）。两点值得记：① **体验层组件可以是 client component**——`Timeline` 为了把竖向滚轮转成横向滚动带了 `"use client"`，三层模型不要求体验层全是 Server Component；② `v1/data.ts` 是**临时演示数据**，放在体验层内属于故意的例外，真数据仍按 §三 的约定去 `_data/library/`，接手时不要把它当成数据层已落地。机制本身未变。见 [`logs/2026-07-27-library-skeleton.md`](../logs/2026-07-27-library-skeleton.md) §十二~十四。

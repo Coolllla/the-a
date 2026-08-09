@@ -15,6 +15,14 @@
 
 import Nav from "@/app/_shell/Nav/Nav";
 
+// 正文排版契约。在这一层 import 而不是全站 globals.scss，是为了让样式表
+// 只随阅读区加载 —— 首页与藏书阁不该背这份体积，也不该被它的纸色影响。
+//
+// ⚠️ 它是【全局样式表】而不是 CSS Module（没有 `styles.` 前缀）：正文由 MDX
+// 编译成裸元素，拿不到 Module 的 hash 类名，只能靠容器后代选择器。理由与
+// 同步契约写在文件顶部。
+import "@/app/_styles/chapter-theme.scss";
+
 export default function ReadingLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
