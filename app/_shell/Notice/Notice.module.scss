@@ -1,0 +1,37 @@
+.button {
+  position: absolute;
+  display: block;
+  width: fit-content;
+  z-index: 70000;
+}
+
+.container {
+  background-color: color-mix(in srgb, var(--bg-paper) 90%, transparent);
+  border-radius: 5px;
+  border: 1px solid var(--line-light);
+
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  transform: translate(-50%, -50%);
+  z-index: 70000;
+  padding: 2rem;
+  backdrop-filter: blur(3px);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 40vw;
+}
+
+.title {
+  text-decoration: underline;
+}
+
+.box {
+  line-height: 1.2;
+}
+
+.date {
+  font-size: 2rem;
+}

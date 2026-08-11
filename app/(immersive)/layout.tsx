@@ -10,6 +10,7 @@
 // 本组不做顶部 padding —— Nav 是 fixed 悬浮层，画面顶到它下面是有意的。
 
 import Nav from "@/app/_shell/Nav/Nav";
+import Notice from "../_shell/Notice/Notice";
 
 export default function ImmersiveLayout({
   children,
@@ -19,6 +20,7 @@ export default function ImmersiveLayout({
   return (
     <>
       <Nav theme="dark" />
+      <Notice />
       {children}
     </>
   );
